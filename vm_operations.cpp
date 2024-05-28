@@ -11,18 +11,44 @@ void view_vm() {
     system(view_cmd.c_str());
 }
 
-void shutdown_vm() {
-    string state = get_vm_state(name);
-    string view_cmd = "sudo virsh shutdown " + name; 
+void pause_vm() {
+    string view_cmd = "sudo virsh suspend " + name; 
     system(view_cmd.c_str());
+}
+
+void resume_vm() {
+    string view_cmd = "sudo virsh resume " + name; 
+    system(view_cmd.c_str());
+}
+
+void shutdown_vm() {
+    string shutdown_cmd = "sudo virsh shutdown " + name; 
+    system(shutdown_cmd.c_str()); 
+    string state = get_vm_state(name);
+
+    if (state.find("running") != string::npos || state.find("paused") != string::npos) {
+        cout << "The VM isnt responding do you want to forcefully shutdown the vm ? (y/n): ";
+        string confirm;
+        getline(cin, confirm);
+
+        if (confirm != "y" && confirm != "Y") {
+            cout << "VM force shutdown proccess cancelled for " << name << "'.\n";
+            return;
+        }
+
+        cout << "Forcefully shutting down " << name << ".\n";
+        string shutdown_cmd = "sudo virsh destroy " + name + ".\n";
+        system(shutdown_cmd.c_str());
+    }
+    cout << "Successfully shutdown " << name; 
 }
 
 void delete_vm() {
     string state = get_vm_state(name);
     if (state.find("running") != string::npos || state.find("paused") != string::npos) {
-        cout << "Shutting down VM " << name << " before deletion.\n";
+        cout << "Forcefully shutting down VM " << name << " before deletion.\n";
         string shutdown_cmd = "sudo virsh destroy " + name;
-        exec(shutdown_cmd.c_str());
+        system(shutdown_cmd.c_str());
     }
 
     string undefine_cmd = "sudo virsh undefine " + name;
@@ -59,7 +85,7 @@ void create_vm() {
     }
 
     if(!source.empty()) {
-        cout << "Downloading iso to images(Please use ctrl+c after the download proccess is complete to come back to the main program)" << "\n";
+        cout << "D1q ownloading iso to images(Please use ctrl+c after the download proccess is complete to come back to the main program)" << "\n";
         string download_cmd = "aria2c --dir images " + source;
         system(download_cmd.c_str());
         cout << "Finding the path to the downloaded iso image" << "\n";
@@ -146,115 +172,8 @@ void create_vm() {
     start_vm();
 }
 
-void process_operands(int argc, char *argv[]) {
-    bool fetching_name = false;
-    bool fetching_source = false;
-    bool fetching_local_source = false;
-    bool fetching_cpu_limit = false;
-    bool fetching_memory_limit = false;
-    int action_index = INT_MAX;
 
-    for (int i = 1; i < argc; ++i) {
-        if (fetching_name) {
-            name = argv[i];
-            fetching_name = false;
-            continue;
-        }
-        if (fetching_source) {
-            source = argv[i];
-            source_local = "";
-            fetching_source = false;
-            continue;
-        }
-        if (fetching_local_source) {
-            source_local = argv[i];
-            source = "";
-            fetching_local_source = false;
-            continue;
-        }
-        if (fetching_cpu_limit) {
-            cpu_limit = argv[i];
-            fetching_cpu_limit = false;
-            continue;
-        }
-        if (fetching_memory_limit) {
-            memory_limit = argv[i];
-            fetching_memory_limit = false;
-            continue;
-        }
-
-        if (strcmp(argv[i], "--help") == 0) {
-            show_help();
-            return;
-        }
-        if (strcmp(argv[i], "create") == 0 && action == "") {
-            creating_vm = true;
-            action = "create";
-            action_index = i;
-            continue;
-        }
-        if (strcmp(argv[i], "--name") == 0 && action_index!=INT_MAX) {
-            fetching_name = true;
-            continue;
-        }
-        if (strcmp(argv[i], "--source") == 0 && action=="create") {
-            fetching_source = true;
-            continue;
-        }
-        if (strcmp(argv[i], "--source-local") == 0 && action=="create") {
-            fetching_local_source = true;
-            continue;
-        }
-        if (strcmp(argv[i], "--cpus") == 0 && action=="create") {
-            fetching_cpu_limit = true;
-            continue;
-        }
-        if ((strcmp(argv[i], "--memory") == 0 || strcmp(argv[i], "--mem") == 0) && action=="create") {
-            fetching_memory_limit = true;
-            continue;
-        }
-        if (strcmp(argv[i], "start") == 0 && action == "") {
-            starting_vm = true;
-            action = "start";
-            action_index = i;
-            continue;
-        }
-        if (strcmp(argv[i], "delete") == 0 && action == "") {
-            deleting_vm = true;
-            action = "delete";
-            action_index = i;
-            continue;
-        }
-        if (strcmp(argv[i], "list") == 0 && action == "") {
-            listing_vm = true;
-            action = "list";
-            action_index = i;
-            continue;
-        }
-        if (strcmp(argv[i], "view") == 0 && action == "") {
-            viewing_vm = true;
-            action = "view";
-            action_index = i;
-            continue;
-        }
-
-        if (i - 1 == action_index) {
-            name = argv[i];
-            continue;
-        }
-
-        if (action == "") {
-            cout << "Ship found unknown operand " << argv[i] << "\n";
-            cout << "For more information try ship --help\n";
-        } else {
-            cout << "Ship found unknown operand " << argv[i] << " for action " << action << "\n";
-        }
-
-        exit(1);
-    }
-}
-
-void exec_action() {
+void exec_action_for_vm() {
     if (action == "create") {
         create_vm();
     } else if (action == "start") {
@@ -265,6 +184,12 @@ void exec_action() {
         view_vm();
     } else if (action == "list") {
         cout << list_vm();
+    } else if (action == "pause") {
+        pause_vm();
+    } else if (action == "resume") {
+        resume_vm();
+    } else if (action == "shutdown") {
+        shutdown_vm();
     }
 }
 

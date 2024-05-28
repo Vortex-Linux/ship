@@ -36,41 +36,63 @@ string list_vm() {
     return result;
 }
 
+string list_container() {
+    string cmd = "distrobox list";
+    string result = exec(cmd.c_str());
+    return result;
+}
+
 string get_vm_state(const string &vm_name) {
     string cmd = "sudo virsh domstate " + vm_name;
     return exec(cmd.c_str());
 }
 
-vector<int> extract_vm_numbers(const string& result) {
-    vector<int> vm_numbers;
+vector<int> extract_numbers_with_prefix(const string& result,const string& prefix) {
+    vector<int> numbers;
     istringstream stream(result);
     string line;
     while (getline(stream, line)) {
-        size_t pos = line.find("vm");
+        size_t pos = line.find(prefix);
         if (pos != string::npos) {
             string num_str = line.substr(pos + 2);
             try {
                 int num = stoi(num_str);
-                vm_numbers.push_back(num);
+                numbers.push_back(num);
             } catch (...) {
                 // Ignore any invalid numbers
             }
         }
     }
-    return vm_numbers;
+    return numbers;
 }
 
-int get_next_available_vm_number() {
-    string result = exec("sudo virsh list --all | grep vm");
-    vector<int> vm_numbers = extract_vm_numbers(result);
+int get_next_available_number_in_command_output(const string& command,const string& prefix) {
+    string result = exec(command.c_str());
+    vector<int> numbers = extract_numbers_with_prefix(result,prefix);
 
-    if (vm_numbers.empty()) {
-        return 1;     }
+    if (numbers.empty()) {
+        return 1;     
+    }
 
-    int max_vm_number = *max_element(vm_numbers.begin(), vm_numbers.end());
-    return max_vm_number + 1;
+    int max_number = *max_element(numbers.begin(), numbers.end());
+    return max_number + 1;
 }
 
+int get_next_available_vm_number(){
+    string command = "sudo virsh list --all | grep vm";
+    string prefix = "container";
+    int next_vm_number = get_next_available_number_in_command_output(command,prefix);
+    return next_vm_number;
+}
+
+int get_next_available_container_number(){
+    string command = "distrobox list | grep vm";
+    string prefix = "vm";
+    int next_container_number = get_next_available_number_in_command_output(command,prefix);
+    return next_container_number;
+}
+
+    
 string get_absolute_path(const string &relative_path) {
     char abs_path[PATH_MAX];
     if (realpath(relative_path.c_str(), abs_path) != NULL) {
