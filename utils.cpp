@@ -80,14 +80,14 @@ int get_next_available_number_in_command_output(const string& command,const stri
 
 int get_next_available_vm_number(){
     string command = "sudo virsh list --all | grep vm";
-    string prefix = "container";
+    string prefix = "vm";
     int next_vm_number = get_next_available_number_in_command_output(command,prefix);
     return next_vm_number;
 }
 
 int get_next_available_container_number(){
     string command = "distrobox list | grep vm";
-    string prefix = "vm";
+    string prefix = "container";
     int next_container_number = get_next_available_number_in_command_output(command,prefix);
     return next_container_number;
 }
@@ -100,5 +100,39 @@ string get_absolute_path(const string &relative_path) {
     } else {
         cout << "The path " << relative_path << " not found";
         exit(0);
+    }
+}
+
+void exec_package_manager_operations() {
+    if(mode=="container") {
+        find_container_package_manager();
+    }else {
+        find_vm_package_manager();
+    }
+
+    auto it = package_managers.find(package_manager_name);
+
+    if (it != package_managers.end()) {
+        const PackageManagerCommands& commands = it->second;
+
+        if (action == "package_search") {
+            command = commands.search_command + " " + packages + " " + command;
+        } else if (action == "package_download") {
+            command = commands.install_command + " " + packages + " " + command;
+        } else if (action == "package_remove") {
+            command = commands.remove_command + " " + packages + " " + command;
+        }
+
+        command = "yes | " + command;
+
+        if(mode=="container") {
+            exec_command_container();
+        } else {
+            action = "exec";
+            exec_command_vm();
+        }
+
+    } else {
+        cout << "Package manager not found\n";
     }
 }

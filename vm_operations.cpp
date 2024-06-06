@@ -3,12 +3,44 @@
 void start_vm() {
     string start_cmd = "sudo virsh start " + name;
     exec(start_cmd.c_str());
+
     cout << "VM " << name << " started successfully.\n";
+
+    cout << "Entering VM for like login proccess if its there as ship has no knowledge about the inside woorking of a particular os please type login details or anything to get ito where you can type commands and then use Ctrl+B and then D to exit\n";
+    cout << "Press Enter to continue...\n";
+    cin.get();
+
+    string create_tmux_session_cmd = "tmux new -d -s" + name;
+    system(create_tmux_session_cmd.c_str());
+
+string run_console_cmd = "tmux send-keys -t " + name + " 'sudo virsh console " + name + "' C-m";
+    system(run_console_cmd.c_str());
+
+
+    string attach_console_session_cmd = "tmux attach-session -t " + name;
+    system(attach_console_session_cmd.c_str());
+}
+
+void view_vm_console() {
+    string view_cmd = "sudo virsh console " + name;      
+    system(view_cmd.c_str());
+}
+
+void view_vm_gui() {
+    string view_cmd = "sudo virt-viewer " + name; 
+    system(view_cmd.c_str());
 }
 
 void view_vm() {
-    string view_cmd = "sudo virt-viewer " + name; 
-    system(view_cmd.c_str());
+    cout << "Do you want a full GUI of the VM(By default the view action will show only a terminal of the VM) ? (y/n): ";     
+    string confirm;     
+    getline(cin, confirm); 
+
+    if (confirm != "y" && confirm != "Y") {
+        view_vm_console();
+    }else {
+        view_vm_gui();
+    }   
 }
 
 void pause_vm() {
@@ -85,7 +117,7 @@ void create_vm() {
     }
 
     if(!source.empty()) {
-        cout << "D1q ownloading iso to images(Please use ctrl+c after the download proccess is complete to come back to the main program)" << "\n";
+        cout << "Downloading iso to images(Please use ctrl+c after the download proccess is complete to come back to the main program)" << "\n";
         string download_cmd = "aria2c --dir images " + source;
         system(download_cmd.c_str());
         cout << "Finding the path to the downloaded iso image" << "\n";
@@ -146,6 +178,12 @@ void create_vm() {
       <listen type='address' address='0.0.0.0'/>
     </graphics>
     <graphics type='spice' autoport='yes'/>
+    <console type='pty'>
+      <target type='virtio' port='0'/>
+    </console>
+    <controller type='usb' index='0'/>
+    <controller type='scsi' index='0'/>
+    <controller type='pci' index='0' model='pci-root'/>
   </devices>
 </domain>
 )";
@@ -172,6 +210,55 @@ void create_vm() {
     start_vm();
 }
 
+bool exec_command_vm() {
+    string clear_screen_cmd = "tmux send-keys -t " + name + " C-l";
+    system(clear_screen_cmd.c_str());
+
+    usleep(200000); 
+
+    string marker = "MARKER_" + to_string(rand());
+    string marker_cmd = "tmux send-keys -t " + name + " '" + marker + "' C-m";
+    system(marker_cmd.c_str());
+
+    usleep(200000); 
+
+    string run_cmd = "tmux send-keys -t " + name + " '" + command + "' C-m";
+    system(run_cmd.c_str());
+
+    usleep(200000); 
+
+    string capture_cmd = "tmux capture-pane -t " + name + " -pS - | tac | grep -m1 -B " + to_string(INT_MAX) + " " + marker + " | tac | tail -n +3 | sed '/^\\s*$/d' | head -n -1";
+    string output = exec(capture_cmd.c_str());
+
+    if (action == "exec") {
+        cout << output;
+    }
+
+    if (action !="exec" && output.find_first_not_of(' ') != string::npos) {
+        return true;
+    }
+
+    return false;
+}
+
+bool check_vm_command_exists() {
+    command += " --version > /dev/null 2>&1 && echo 0";
+    bool result = exec_command_vm();
+    return result;
+} 
+
+void find_vm_package_manager() {
+    string parameters = command;
+    for (const auto& package_manager : package_managers) {
+        command = package_manager.first;
+        if (check_vm_command_exists()) {
+            package_manager_name = package_manager.first;             
+            cout << "Package manager found as " << package_manager_name << " for container " << name << "\n";
+            command = parameters;
+            return;
+        }
+    }
+}
 
 void exec_action_for_vm() {
     if (action == "create") {
@@ -190,6 +277,14 @@ void exec_action_for_vm() {
         resume_vm();
     } else if (action == "shutdown") {
         shutdown_vm();
+    } else if (action == "exec") {
+        exec_command_vm();
+    } else if (action == "package_download") {
+        exec_package_manager_operations();
+    } else if (action == "package_search") {
+        exec_package_manager_operations();
+    } else if (action == "package_remove") {
+        exec_package_manager_operations();
     }
 }
 

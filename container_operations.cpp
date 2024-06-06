@@ -48,6 +48,26 @@ void view_container() {
     system(cmd.c_str());
 }
 
+void exec_command_container() {
+    cout << command; 
+    string cmd = "distrobox enter " + name + " -- " + command;
+    system(cmd.c_str());
+}
+
+bool check_container_command_exists(const string& command) {
+    string cmd = "distrobox enter " + name + " -- " + command + " --version > /dev/null 2>&1";
+    int result = system(cmd.c_str());
+    return result == 0;
+}
+void find_container_package_manager() {
+    for (const auto& package_manager : package_managers) {
+        if (check_container_command_exists(package_manager.first)) {
+            package_manager_name = package_manager.first;             
+            cout << "Package manager found as " << package_manager_name << " for container " << name << "\n";
+        }
+    }
+}
+
 void exec_action_for_container() {
     if (action == "create") {
         create_container();
@@ -61,7 +81,15 @@ void exec_action_for_container() {
         cout << list_container();
     } else if (action == "stop") {
         stop_container();
-    } 
+    } else if (action == "exec") {
+        exec_command_container();
+    } else if (action == "package_download") {
+        exec_package_manager_operations();
+    } else if (action == "package_search") {
+        exec_package_manager_operations();
+    } else if (action == "package_remove") {
+        exec_package_manager_operations();
+}  
 }
 
 

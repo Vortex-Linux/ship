@@ -7,7 +7,7 @@ CXX := g++
 CXXFLAGS := -std=c++11 -Wall -Wextra
 
 # Source files
-SRCS := ship.cpp utils.cpp vm_operations.cpp container_operations.cpp
+SRCS := ship.cpp utils.cpp vm_operations.cpp container_operations.cpp 
 
 # Object files
 OBJS := $(SRCS:.cpp=.o)
