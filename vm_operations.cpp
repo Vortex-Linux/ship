@@ -211,30 +211,34 @@ void create_vm() {
 }
 
 bool exec_command_vm() {
-    string clear_screen_cmd = "tmux send-keys -t " + name + " C-l";
-    system(clear_screen_cmd.c_str());
-
-    usleep(200000); 
-
-    string marker = "MARKER_" + to_string(rand());
-    string marker_cmd = "tmux send-keys -t " + name + " '" + marker + "' C-m";
-    system(marker_cmd.c_str());
-
-    usleep(200000); 
+    string start_marker = "MARKER_" + to_string(rand());
+    string start_marker_cmd = "tmux send-keys -t " + name + " '" + start_marker + "' C-m";
+    system(start_marker_cmd.c_str());
 
     string run_cmd = "tmux send-keys -t " + name + " '" + command + "' C-m";
     system(run_cmd.c_str());
 
-    usleep(200000); 
+    string end_marker = "MARKER_" + to_string(rand());
+    string end_marker_cmd = "tmux send-keys -t " + name + " 'echo " + end_marker + "' C-m";
+    system(end_marker_cmd.c_str());
 
-    string capture_cmd = "tmux capture-pane -t " + name + " -pS - | tac | grep -m1 -B " + to_string(INT_MAX) + " " + marker + " | tac | tail -n +3 | sed '/^\\s*$/d' | head -n -1";
+    string capture_cmd = "tmux capture-pane -t " + name + " -pS - | tail -n 2 | head -n 1";
+
+    while (true) {
+        string output = exec(capture_cmd.c_str());
+        if (output.find(end_marker) != string::npos) {
+            break;
+        }
+    }
+
+    capture_cmd = "tmux capture-pane -t " + name + " -pS - | tac | grep -m1 -B " + to_string(INT_MAX) + " " + start_marker + " | tac | tail -n +3 | sed '/^\\s*$/d' | head -n -3";
     string output = exec(capture_cmd.c_str());
 
     if (action == "exec") {
         cout << output;
     }
 
-    if (action !="exec" && output.find_first_not_of(' ') != string::npos) {
+    if (action != "exec" && output.find_first_not_of(' ') != string::npos) {
         return true;
     }
 
