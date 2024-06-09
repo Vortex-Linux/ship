@@ -136,3 +136,18 @@ void exec_package_manager_operations() {
         cout << "Package manager not found\n";
     }
 }
+
+string generate_mac_address() {
+    ostringstream mac;
+    random_device rd;
+    mt19937 gen(rd());
+    uniform_int_distribution<> dis(0x00, 0xFF);
+
+    mac << std::hex << std::setfill('0');
+    mac << "52:54:00"; 
+    for (int i = 0; i < 3; ++i) {
+        mac << ":" << std::setw(2) << dis(gen);
+    }
+
+    return mac.str();
+}

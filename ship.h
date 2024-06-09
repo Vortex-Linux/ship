@@ -16,6 +16,8 @@
 #include <map>
 #include <sstream>
 #include <unistd.h>
+#include <iomanip>
+#include <random>
 
 using namespace std;
 
@@ -77,6 +79,6 @@ void exec_action();
 void exec_action_for_container();
 void exec_action_for_vm();
 string get_absolute_path(const string &relative_path);
-
+string generate_mac_address();
 #endif // SHIP_H
 

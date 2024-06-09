@@ -83,13 +83,16 @@ void delete_vm() {
         system(shutdown_cmd.c_str());
     }
 
-    string undefine_cmd = "sudo virsh undefine " + name;
+    string undefine_cmd = "sudo virsh undefine --nvram " + name;
     exec(undefine_cmd.c_str());
     cout << "VM " << name << " deleted successfully.\n";
 }
 
 void create_vm() {
     cout << "Creating new virtual machine for ship\n";
+
+    string name;
+    string iso_path;
 
     if (name.empty()) {
         int next_vm_number = get_next_available_vm_number();
@@ -118,35 +121,37 @@ void create_vm() {
 
     if(!source.empty()) {
         cout << "Downloading iso to images(Please use ctrl+c after the download proccess is complete to come back to the main program)" << "\n";
-        string download_cmd = "aria2c --dir images " + source;
+        string download_cmd = "aria2c --dir images/iso-images " + source;
         system(download_cmd.c_str());
         cout << "Finding the path to the downloaded iso image" << "\n";
-        string find_latest_image_cmd = "find images  -type f -exec ls -t1 {} + | head -1";
+        string find_latest_image_cmd = "find images/iso-images  -type f -exec ls -t1 {} + | head -1";
         source_local = exec(find_latest_image_cmd.c_str());
         cout << "Found the path as " << source_local << "\n";
     }
 
-    if (memory_limit.empty()) {
-        cout << "Please specify the memory limit of this VM (leave blank for no limit): ";
-        getline(cin, memory_limit);
-    }
     if (memory_limit.empty()) {
         int max_memory = stoi(exec("free -m | awk '/^Mem:/{print $2}'"));
         memory_limit = to_string(max_memory);
     }
 
     if (cpu_limit.empty()) {
-        cout << "Please specify the CPU limit of this VM (leave blank for no limit): ";
-        getline(cin, cpu_limit);
-    }
-    if (cpu_limit.empty()) {
         int max_cpus = stoi(exec("nproc"));
         cpu_limit = to_string(max_cpus);
     }
 
-    source_local = get_absolute_path(source_local);
+    string disk_image_path = get_absolute_path("./images/disk-images") + "/" + name + ".qcow2";
 
-    stringstream vm_xml;
+    ifstream check_file(disk_image_path);
+    if (!check_file.good()) {
+        cout << "Creating disk image at: " << disk_image_path << endl;
+        string create_disk_cmd = "qemu-img create -f qcow2 " + disk_image_path + " 20G";
+        exec(create_disk_cmd.c_str());
+    }
+    check_file.close();
+
+    iso_path = get_absolute_path(source_local);
+
+    ostringstream vm_xml;
     vm_xml << R"(
 <domain type='kvm'>
   <name>)" << name << R"(</name>
@@ -157,33 +162,56 @@ void create_vm() {
     <boot dev='hd'/>
     <boot dev='cdrom'/>
   </os>
+  <features>
+    <acpi/>
+    <apic/>
+    <hyperv>
+      <relaxed state='on'/>
+      <vapic state='on'/>
+      <spinlocks state='on' retries='8191'/>
+    </hyperv>
+  </features>
+  <clock offset='localtime'>
+    <timer name='rtc' tickpolicy='catchup'/>
+    <timer name='pit' tickpolicy='delay'/>
+    <timer name='hpet' present='no'/>
+    <timer name='hypervclock' present='yes'/>
+  </clock>
   <devices>
+    <disk type='file' device='disk'>
+      <driver name='qemu' type='qcow2'/>
+      <source file=')" << disk_image_path << R"('/>
+      <target dev='vda' bus='virtio'/>
+    </disk>
     <disk type='file' device='cdrom'>
       <driver name='qemu' type='raw'/>
-      <source file=')" << source_local << R"('/>
-      <target dev='hdc' bus='ide'/>
+      <source file=')" << iso_path << R"('/>
+      <target dev='sda' bus='sata'/>
       <readonly/>
     </disk>
-    <filesystem type='mount'>
-      <source dir='/'/>
-      <target dir='host_files'/>
-    </filesystem>
+    <controller type='usb' index='0'>
+      <model name='qemu-xhci'/>
+    </controller>
+    <controller type='pci' index='0' model='pci-root'/>
+    <controller type='sata' index='0'/>
     <interface type='network'>
+      <mac address=')" << generate_mac_address() << R"('/>
       <source network='default'/>
+      <model type='virtio'/>
     </interface>
     <input type='tablet' bus='usb'/>
-    <input type='mouse' bus='usb'/>
     <input type='keyboard' bus='usb'/>
     <graphics type='vnc' port='-1' autoport='yes' listen='0.0.0.0'>
       <listen type='address' address='0.0.0.0'/>
     </graphics>
-    <graphics type='spice' autoport='yes'/>
     <console type='pty'>
-      <target type='virtio' port='0'/>
+      <target type='virtio'/>
     </console>
-    <controller type='usb' index='0'/>
-    <controller type='scsi' index='0'/>
-    <controller type='pci' index='0' model='pci-root'/>
+    <sound model='ich9'/>
+    <video>
+      <model type='qxl' vram='65536' heads='1'/>
+    </video>
+    <memballoon model='virtio'/>
   </devices>
 </domain>
 )";
@@ -198,15 +226,16 @@ void create_vm() {
 
     cout << "New VM " << name << " was created successfully.\n";
 
-    cout << "Do you want to start the VM right now " << name << "? (y/n): ";
+    cout << "Do you want to start the VM " << name << " right now? (y/n): ";
     string confirm;
     getline(cin, confirm);
 
-    if (confirm != "y" && confirm != "Y") {
-        cout << "VM has not been started, you can start it at any time with 'ship start " << name << "'.\n";
+    if (confirm == "y" || confirm == "Y") {
+        cout << "Starting VM " << name << "...\n";
+    } else {
+        cout << "VM has not been started. You can start it later with 'ship start " << name << "'.\n";
         return;
     }
-
     start_vm();
 }
 
