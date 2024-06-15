@@ -91,19 +91,7 @@ void delete_vm() {
 void create_vm() {
     cout << "Creating new virtual machine for ship\n";
 
-    string name;
-    string iso_path;
-
-    if (name.empty()) {
-        int next_vm_number = get_next_available_vm_number();
-        name = "vm" + to_string(next_vm_number);
-        cout << "Please specify the name of this VM(leaving this blank will set the name to " << name << ")";
-        string name_given;
-        getline(cin, name_given);
-        if(!name_given.empty()) {
-            name = name_given; 
-        }
-    }
+    generate_vm_name();
 
     if (source.empty() && source_local.empty()) {
         cout << "Please specify the source of this VM (leave this blank if you want to specify a local source): ";
@@ -119,38 +107,30 @@ void create_vm() {
         }
     }
 
-    if(!source.empty()) {
-        cout << "Downloading iso to images(Please use ctrl+c after the download proccess is complete to come back to the main program)" << "\n";
-        string download_cmd = "aria2c --dir images/iso-images " + source;
-        system(download_cmd.c_str());
-        cout << "Finding the path to the downloaded iso image" << "\n";
-        string find_latest_image_cmd = "find images/iso-images  -type f -exec ls -t1 {} + | head -1";
-        source_local = exec(find_latest_image_cmd.c_str());
-        cout << "Found the path as " << source_local << "\n";
+    get_iso_source();
+
+    if(!source_local.empty() && source.empty()) {
+        if (source_local.find_last_of(".") != string::npos) {
+            string extension = source_local.substr(source_local.find_last_of("."));
+            if (extension == ".iso") {
+                iso_path = get_absolute_path(source_local);
+                create_disk_image();
+            }else if (extension == ".qcow2" || extension == ".qcow") {
+                disk_image_path = get_absolute_path(source_local);
+            }
+        }
     }
 
-    if (memory_limit.empty()) {
-        int max_memory = stoi(exec("free -m | awk '/^Mem:/{print $2}'"));
-        memory_limit = to_string(max_memory);
-    }
+    set_memory_limit();
+    set_cpu_limit();
 
-    if (cpu_limit.empty()) {
-        int max_cpus = stoi(exec("nproc"));
-        cpu_limit = to_string(max_cpus);
-    }
+    string xml_filename = generate_vm_xml();
+    define_vm(xml_filename);
 
-    string disk_image_path = get_absolute_path("./images/disk-images") + "/" + name + ".qcow2";
+    start_vm_with_confirmation_prompt();
+}
 
-    ifstream check_file(disk_image_path);
-    if (!check_file.good()) {
-        cout << "Creating disk image at: " << disk_image_path << endl;
-        string create_disk_cmd = "qemu-img create -f qcow2 " + disk_image_path + " 20G";
-        exec(create_disk_cmd.c_str());
-    }
-    check_file.close();
-
-    iso_path = get_absolute_path(source_local);
-
+string generate_vm_xml() {
     ostringstream vm_xml;
     vm_xml << R"(
 <domain type='kvm'>
@@ -182,13 +162,19 @@ void create_vm() {
       <driver name='qemu' type='qcow2'/>
       <source file=')" << disk_image_path << R"('/>
       <target dev='vda' bus='virtio'/>
-    </disk>
+    </disk>)";
+
+    if (!iso_path.empty()) {
+        vm_xml << R"(
     <disk type='file' device='cdrom'>
       <driver name='qemu' type='raw'/>
       <source file=')" << iso_path << R"('/>
       <target dev='sda' bus='sata'/>
       <readonly/>
-    </disk>
+    </disk>)";
+    }
+
+    vm_xml << R"(
     <controller type='usb' index='0'>
       <model name='qemu-xhci'/>
     </controller>
@@ -221,11 +207,17 @@ void create_vm() {
     xml_file << vm_xml.str();
     xml_file.close();
 
+    return xml_filename;
+}
+
+void define_vm(const string& xml_filename) {
     string define_cmd = "sudo virsh define " + xml_filename;
     exec(define_cmd.c_str());
 
-    cout << "New VM " << name << " was created successfully.\n";
+    cout << "New VM configuration defined.\n";
+}
 
+void start_vm_with_confirmation_prompt() {
     cout << "Do you want to start the VM " << name << " right now? (y/n): ";
     string confirm;
     getline(cin, confirm);
@@ -239,6 +231,53 @@ void create_vm() {
     start_vm();
 }
 
+void get_iso_source() {
+    if(!source.empty()) {
+        cout << "Downloading iso to images(Please use ctrl+c after the download proccess is complete to come back to the main program)" << "\n";
+        string download_cmd = "aria2c --dir images/iso-images " + source;
+        system(download_cmd.c_str());
+        cout << "Finding the path to the downloaded iso image" << "\n";
+        string find_latest_image_cmd = "find images/iso-images  -type f -exec ls -t1 {} + | head -1";
+        source_local = exec(find_latest_image_cmd.c_str());
+        cout << "Found the path as " << source_local << "\n";
+    }
+}
+
+void create_disk_image() {
+    disk_image_path = get_absolute_path("./images/disk-images") + "/" + name + ".qcow2";
+    ifstream check_file(disk_image_path);
+    if (!check_file.good()) {
+        cout << "Creating disk image at: " << disk_image_path << endl;
+        string create_disk_cmd = "qemu-img create -f qcow2 " + disk_image_path + " 1P";
+        system(create_disk_cmd.c_str());
+    }
+    check_file.close();
+}
+
+void generate_vm_name() {
+    int next_vm_number = get_next_available_vm_number();
+    name = "vm" + to_string(next_vm_number);
+}
+
+void set_memory_limit() {
+    if (memory_limit.empty()) {
+        int max_memory = stoi(exec("free -m | awk '/^Mem:/{print $2}'"));
+        memory_limit = to_string(max_memory);
+    }
+}
+
+void set_cpu_limit() {
+    if (cpu_limit.empty()) {
+        int max_cpus = stoi(exec("nproc"));
+        cpu_limit = to_string(max_cpus);
+    }
+}
+
+void start_vm(const string& name) {
+    cout << "Starting VM " << name << "...\n";
+    string start_cmd = "sudo virsh start " + name;
+    exec(start_cmd.c_str());
+}
 bool exec_command_vm() {
     string start_marker = "MARKER_" + to_string(rand());
     string start_marker_cmd = "tmux send-keys -t " + name + " '" + start_marker + "' C-m";
@@ -294,6 +333,10 @@ void find_vm_package_manager() {
 }
 
 void exec_action_for_vm() {
+    if (!package_manager_name.empty()) {
+        
+    }
+
     if (action == "create") {
         create_vm();
     } else if (action == "start") {
@@ -312,12 +355,8 @@ void exec_action_for_vm() {
         shutdown_vm();
     } else if (action == "exec") {
         exec_command_vm();
-    } else if (action == "package_download") {
+    }  else if (action == "package_download" || action == "package_search" || action == "package_remove") {
         exec_package_manager_operations();
-    } else if (action == "package_search") {
-        exec_package_manager_operations();
-    } else if (action == "package_remove") {
-        exec_package_manager_operations();
-    }
+    } 
 }
 

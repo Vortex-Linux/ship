@@ -151,3 +151,38 @@ string generate_mac_address() {
 
     return mac.str();
 }
+
+void send_file() {
+    if(mode=="container") {
+        string send_container_cmd = "distrobox export " + name + " > /tmp/container.tar && croc send /tmp/container.tar";
+        system(send_container_cmd.c_str());
+    }else {
+        string get_vm_disk_image_cmd = "virsh domblklist " + name + " --details | awk '/source file/ {print $3}' | grep '.qcow2$'";
+        string result = exec(get_vm_disk_image_cmd.c_str());
+        string send_vm_cmd = "croc send " + get_absolute_path(result);
+        system(send_vm_cmd.c_str());
+    } 
+}
+
+void receive_file() {
+    string code;
+    cout << "Please type the secret code: ";
+    getline(cin, code);
+
+    if(mode=="container") {
+        string receive_container_cmd = "croc recv " + code +  " -o /tmp/ && distrobox import < /tmp/container.tar";
+        system(receive_container_cmd.c_str());
+    }else {
+        source_local = get_absolute_path("images/disk-images/");
+        string receive_vm_cmd = "croc recv " + code +  " -o " + source_local;
+        system(receive_vm_cmd.c_str());
+    } 
+}
+
+void send_container_info() {
+}
+
+void send_vm_info() {
+    
+}
+

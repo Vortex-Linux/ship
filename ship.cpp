@@ -31,6 +31,8 @@ string source_local;
 string memory_limit;
 string cpu_limit;
 string image;
+string iso_path;
+string disk_image_path;
 
 void process_operands(int argc, char *argv[]) {
     bool fetching_command = false;
@@ -240,6 +242,26 @@ void process_operands(int argc, char *argv[]) {
 
         if (strcmp(argv[i], "--packages") == 0) {
             fetching_packages = true;
+            continue;
+        }
+
+        if (strcmp(argv[i], "--aur") == 0 && strcmp(argv[i], "-aur") == 0) {
+            package_manager_name = "pacman";
+            continue;
+        }
+
+        if (strcmp(argv[i], "--dnf") == 0 && strcmp(argv[i], "-dnf") == 0) {
+            package_manager_name = "dnf";
+            continue;
+        }
+
+        if (strcmp(argv[i], "--apt") == 0 && strcmp(argv[i], "-apt") == 0) {
+            package_manager_name = "apt";
+            continue;
+        }
+
+        if (strcmp(argv[i], "--nix") == 0 && strcmp(argv[i], "-nix") == 0) {
+            package_manager_name = "nix";
             continue;
         }
 

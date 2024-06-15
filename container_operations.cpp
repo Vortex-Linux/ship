@@ -13,7 +13,6 @@ void delete_container() {
 }
 
 void create_container() {
-
     if (name.empty()) {
         int next_container_number = get_next_available_container_number();
         name = "container_" + to_string(next_container_number);
@@ -59,6 +58,7 @@ bool check_container_command_exists(const string& command) {
     int result = system(cmd.c_str());
     return result == 0;
 }
+
 void find_container_package_manager() {
     for (const auto& package_manager : package_managers) {
         if (check_container_command_exists(package_manager.first)) {
@@ -69,6 +69,10 @@ void find_container_package_manager() {
 }
 
 void exec_action_for_container() {
+    if (!package_manager_name.empty()) {
+        
+    }
+
     if (action == "create") {
         create_container();
     } else if (action == "delete") {
@@ -83,13 +87,9 @@ void exec_action_for_container() {
         stop_container();
     } else if (action == "exec") {
         exec_command_container();
-    } else if (action == "package_download") {
+    } else if (action == "package_download" || action == "package_search" || action == "package_remove") {
         exec_package_manager_operations();
-    } else if (action == "package_search") {
-        exec_package_manager_operations();
-    } else if (action == "package_remove") {
-        exec_package_manager_operations();
-}  
+    } 
 }
 
 
