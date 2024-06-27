@@ -51,15 +51,16 @@ vector<int> extract_numbers_with_prefix(const string& result,const string& prefi
 int get_next_available_number_in_command_output(const string& command);
 int get_next_available_vm_number();
 int get_next_available_container_number();
+vector<string> split_string_by_line(const string& str);
 string get_vm_state(const string &vm_name);
 void send_file();
 void receive_file();
-void send_container_file();
-void send_vm_info();
+void delete_old_snapshots();
 void start_vm();
 string list_vm();
 void delete_vm();
 void create_vm();
+void save_vm();
 void generate_vm_name();
 void start_vm_with_confirmation_prompt();
 void get_iso_source();

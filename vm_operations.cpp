@@ -1,8 +1,15 @@
 #include "ship.h"
 
 void start_vm() {
-    string start_cmd = "sudo virsh start " + name;
-    exec(start_cmd.c_str());
+    string load_saved_cmd = "sudo virsh snapshot-revert --current " + name;
+    exec(load_saved_cmd.c_str());
+
+    string state = get_vm_state(name);
+
+    if (state.find("running") == string::npos) {
+          string start_cmd = "sudo virsh start " + name;
+          exec(start_cmd.c_str());
+    }
 
     cout << "VM " << name << " started successfully.\n";
 
@@ -13,7 +20,7 @@ void start_vm() {
     string create_tmux_session_cmd = "tmux new -d -s" + name;
     system(create_tmux_session_cmd.c_str());
 
-string run_console_cmd = "tmux send-keys -t " + name + " 'sudo virsh console " + name + "' C-m";
+    string run_console_cmd = "tmux send-keys -t " + name + " 'sudo virsh console " + name + "' C-m";
     system(run_console_cmd.c_str());
 
 
@@ -22,7 +29,7 @@ string run_console_cmd = "tmux send-keys -t " + name + " 'sudo virsh console " +
 }
 
 void view_vm_console() {
-    string view_cmd = "sudo virsh console " + name;      
+    string view_cmd = "tmux attach-session -t " + name;      
     system(view_cmd.c_str());
 }
 
@@ -53,7 +60,42 @@ void resume_vm() {
     system(view_cmd.c_str());
 }
 
+void delete_old_snapshots() {
+    string list_snapshot_cmd = "sudo virsh snapshot-list --name " + name;
+    string snapshot_list = exec(list_snapshot_cmd.c_str());
+    vector<string> snapshots = split_string_by_line(snapshot_list);
+
+    reverse(snapshots.begin(), snapshots.end());
+
+    string latest_snapshot = snapshots.front();
+
+    for (const auto& snapshot : snapshots) {
+        if (snapshot != latest_snapshot) {
+            cout << "Deleting old snapshot: " << snapshot << endl;
+            string delete_cmd = "sudo virsh snapshot-delete " + name + " " + snapshot;
+            system(delete_cmd.c_str());
+        }
+    }
+
+    cout << "Kept latest snapshot: " << latest_snapshot << endl;
+}
+
+void save_vm() {
+    string save_cmd = "sudo virsh snapshot-create --atomic " + name; 
+    system(save_cmd.c_str());
+
+    delete_old_snapshots();
+}
+
 void shutdown_vm() {
+    cout << "Do you want to save the virtual machine before shutting it down: ? (y/n): ";     
+    string confirm;     
+    getline(cin, confirm); 
+
+    if (confirm == "y" || confirm == "Y") {
+        save_vm();
+    }
+
     string shutdown_cmd = "sudo virsh shutdown " + name; 
     system(shutdown_cmd.c_str()); 
     string state = get_vm_state(name);
@@ -69,7 +111,7 @@ void shutdown_vm() {
         }
 
         cout << "Forcefully shutting down " << name << ".\n";
-        string shutdown_cmd = "sudo virsh destroy " + name + ".\n";
+        string shutdown_cmd = "sudo virsh destroy " + name + "\n";
         system(shutdown_cmd.c_str());
     }
     cout << "Successfully shutdown " << name; 
@@ -89,9 +131,20 @@ void delete_vm() {
 }
 
 void create_vm() {
-    cout << "Creating new virtual machine for ship\n";
+    if (name.empty()) {
+        generate_vm_name();
+    }
 
-    generate_vm_name();
+    cout << "Creating new virtual machine for ship with name " + name + "\n";
+
+    if (action == "receive") {
+        cout << "Please specify the name of this VM(leaving this blank will set the name to the name given by the sender which is " << name << ")";
+        string name_given;
+        getline(cin, name_given);
+        if(!name_given.empty()) {
+            name = name_given; 
+        }
+    }
 
     if (source.empty() && source_local.empty()) {
         cout << "Please specify the source of this VM (leave this blank if you want to specify a local source): ";
@@ -282,7 +335,6 @@ bool exec_command_vm() {
     string start_marker = "MARKER_" + to_string(rand());
     string start_marker_cmd = "tmux send-keys -t " + name + " '" + start_marker + "' C-m";
     system(start_marker_cmd.c_str());
-
     string run_cmd = "tmux send-keys -t " + name + " '" + command + "' C-m";
     system(run_cmd.c_str());
 
@@ -351,12 +403,18 @@ void exec_action_for_vm() {
         pause_vm();
     } else if (action == "resume") {
         resume_vm();
+    } else if (action == "save") {
+        save_vm();
     } else if (action == "shutdown") {
         shutdown_vm();
     } else if (action == "exec") {
         exec_command_vm();
-    }  else if (action == "package_download" || action == "package_search" || action == "package_remove") {
+    } else if (action == "package_download" || action == "package_search" || action == "package_remove") {
         exec_package_manager_operations();
-    } 
+    } else if (action == "receive") {
+        receive_file();
+    } else if (action == "send") {
+        send_file();
+    }
 }
 

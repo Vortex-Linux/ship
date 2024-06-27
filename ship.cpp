@@ -176,6 +176,13 @@ void process_operands(int argc, char *argv[]) {
             action_index = i;
             continue;
         }
+
+        if (strcmp(argv[i], "save") == 0 && action == "") {
+            action = "save";
+            action_index = i;
+            continue;
+        }
+
         if (strcmp(argv[i], "shutdown") == 0 && action == "" && mode=="vm") {
             action = "shutdown";
             action_index = i;
@@ -230,6 +237,18 @@ void process_operands(int argc, char *argv[]) {
             continue;
         }
 
+        if ((strcmp(argv[i], "receive") == 0 && action == "")) {
+            action = "receive";
+            action_index = i;
+            continue;
+        }
+
+        if ((strcmp(argv[i], "send") == 0 && action == "")) {
+            action = "send";
+            action_index = i;
+            continue;
+        }
+
         if (strcmp(argv[i], "--command") == 0 && action == "exec") {
             fetching_command = true;
             continue;
@@ -245,7 +264,12 @@ void process_operands(int argc, char *argv[]) {
             continue;
         }
 
-        if (strcmp(argv[i], "--aur") == 0 && strcmp(argv[i], "-aur") == 0) {
+        if (strcmp(argv[i], "--aur") == 1 && strcmp(argv[i], "-aur") == 0) {
+            package_manager_name = "pacman";
+            continue;
+        }
+
+        if (strcmp(argv[i], "--apk") == 1 && strcmp(argv[i], "-aur") == 0) {
             package_manager_name = "pacman";
             continue;
         }
@@ -292,8 +316,10 @@ void exec_action() {
         getline(cin, confirm);
 
         if (confirm != "y" && confirm != "Y") {
+            mode = "container";
             exec_action_for_container();
         } else {
+            mode = "vm";
             exec_action_for_vm();
         }
 

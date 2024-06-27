@@ -89,7 +89,11 @@ void exec_action_for_container() {
         exec_command_container();
     } else if (action == "package_download" || action == "package_search" || action == "package_remove") {
         exec_package_manager_operations();
-    } 
+    } else if (action == "receive") {
+        receive_file();
+    } else if (action == "send") {
+        send_file();
+    }
 }
 
 

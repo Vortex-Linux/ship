@@ -152,15 +152,39 @@ string generate_mac_address() {
     return mac.str();
 }
 
+vector<string> split_string_by_line(const string& str) {
+    vector<string> tokens;
+    istringstream stream(str);
+    string token;
+    while (getline(stream, token)) {
+        if (!token.empty()) {
+            tokens.push_back(token);
+        }
+    }
+    return tokens;
+}
+
 void send_file() {
     if(mode=="container") {
-        string send_container_cmd = "distrobox export " + name + " > /tmp/container.tar && croc send /tmp/container.tar";
-        system(send_container_cmd.c_str());
+        string image = "/tmp/" + name;
+
+        string make_container_image_cmd = "docker commit " + name + " " + name;
+        cout << exec(make_container_image_cmd.c_str()) << endl;
+
+        string make_container_tar_file_cmd = "docker save -o " + image + " " + name;
+        cout << exec(make_container_tar_file_cmd.c_str()) << endl;
+
+        string send_container_image_cmd = "croc send " + image;
+        cout << exec(send_container_image_cmd.c_str()) << endl;
+
+        string image_cleanup_cmd = "docker rmi " + name;
+        cout << exec(image_cleanup_cmd.c_str()) << endl;
+
     }else {
-        string get_vm_disk_image_cmd = "virsh domblklist " + name + " --details | awk '/source file/ {print $3}' | grep '.qcow2$'";
+        string get_vm_disk_image_cmd = "sudo virsh domblklist " + name + " --details | awk '/source file/ {print $3}' | grep '.qcow2$'";
         string result = exec(get_vm_disk_image_cmd.c_str());
         string send_vm_cmd = "croc send " + get_absolute_path(result);
-        system(send_vm_cmd.c_str());
+        cout << exec(send_vm_cmd.c_str()) << endl;
     } 
 }
 
@@ -170,19 +194,39 @@ void receive_file() {
     getline(cin, code);
 
     if(mode=="container") {
-        string receive_container_cmd = "croc recv " + code +  " -o /tmp/ && distrobox import < /tmp/container.tar";
-        system(receive_container_cmd.c_str());
+        string set_croc_secret_cmd = "export CROC_SECRET=" + code;
+        cout << exec(set_croc_secret_cmd.c_str()) << endl;
+
+        string receive_container_cmd = "croc recv";
+        cout << exec(receive_container_cmd.c_str()) << endl;
+
+        string find_container_image_cmd = "ls -t | head -1";
+        string image = exec(find_container_image_cmd.c_str());
+
+        string load_container_image_cmd = "docker load -i " + image;
+        cout << exec(load_container_image_cmd.c_str()) << endl;
+
+        string create_container_cmd = "distrobox create --name " + image + " --image " + image;
+        cout << exec(create_container_cmd.c_str()) << endl;
+
     }else {
         source_local = get_absolute_path("images/disk-images/");
-        string receive_vm_cmd = "croc recv " + code +  " -o " + source_local;
-        system(receive_vm_cmd.c_str());
-    } 
-}
 
-void send_container_info() {
-}
+        string set_croc_secret_cmd = "export CROC_SECRET=" + code;
+        cout << exec(set_croc_secret_cmd.c_str()) << endl;
 
-void send_vm_info() {
-    
+        string receive_vm_cmd = "croc recv -o " + source_local;
+        cout << exec(receive_vm_cmd.c_str()) << endl;
+
+        string find_vm_image_cmd = "find /images/disk-images/  -type f -exec ls -t1 {} + | head -1";
+        string vm_image = exec(find_vm_image_cmd.c_str());
+
+        size_t extension_starting_position = source_local.find(".");
+        string image_name = source_local.substr(0, extension_starting_position);
+
+        name = image_name;
+
+        create_vm();
+  }
 }
 
