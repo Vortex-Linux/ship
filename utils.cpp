@@ -1,20 +1,62 @@
 #include "ship.h"
 
 void show_help() {
-    cout << "Usage: ship [OPTIONS] COMMAND [ARGS...]\n";
-    cout << "Options:\n";
-    cout << "  --help              Show this help message and exit\n";
-    cout << "  -v, --verbose       Enable verbose output\n";
-    cout << "Commands:\n";
-    cout << "  create              Create a new virtual machine\n";
-    cout << "    --name NAME           Set the name of the VM\n";
-    cout << "    --source URL          Set the source URL of the VM\n";
-    cout << "    --source-local PATH   Set the local source path of the VM\n";
-    cout << "    --cpus NUMBER         Set the CPU limit of the VM\n";
-    cout << "    --memory SIZE         Set the memory limit of the VM\n";
-    cout << "  start NAME          Start the specified virtual machine\n";
-    cout << "  delete NAME         Delete the specified virtual machine\n";
-    cout << "  list                List all virtual machines\n";
+    cout << "./ship [OPTIONS] COMMAND [ARGS...]" << endl << endl;
+    cout << "Options:" << endl;
+    cout << "  --help                          Show this help message and exit" << endl;
+    cout << "  --virtual-machine or -vm        Specify action is for VM" << endl;
+    cout << "  --container or -ctr             Specify action is for container" << endl;
+    cout << "  --name NAME                     Specifies the name of the container or VM an action should be executed on" << endl << endl;
+
+    cout << "Commands:" << endl;
+    cout << "  vm" << endl;
+    cout << "    create" << endl;
+    cout << "      --source URL                Set the source URL of the VM" << endl;
+    cout << "      --source-local PATH         Set the local source path of the VM" << endl;
+    cout << "      --cpus NUMBER               Set the CPU limit of the VM" << endl;
+    cout << "      --memory or -mem SIZE       Set the memory limit of the VM" << endl;
+    cout << "    start NAME                    Start the specified virtual machine" << endl;
+    cout << "    delete NAME                   Delete the specified virtual machine" << endl;
+    cout << "    list                          List all virtual machines" << endl;
+    cout << "    view or enter NAME            Shows a console interface or a full GUI of the virtual machine" << endl;
+    cout << "    pause NAME                    Pause the specified virtual machine" << endl;
+    cout << "    resume NAME                   Resume the specified virtual machine if it's paused" << endl;
+    cout << "    save NAME                     Take a snapshot of the specified virtual machine" << endl;
+    cout << "    shutdown NAME                 Shut down the specified virtual machine" << endl;
+    cout << "    exec NAME                     Execute the given command in the console of the specified virtual machine" << endl;
+    cout << "      --command COMMAND           Set the command to be executed" << endl;
+    cout << "    package_download or download_packages NAME" << endl;
+    cout << "                                  Download the specified package using the package manager of the specified virtual machine" << endl;
+    cout << "      --package PACKAGE           Set the package to be downloaded" << endl;
+    cout << "    package_remove or remove_packages NAME" << endl;
+    cout << "                                  Remove the specified package using the package manager of the specified virtual machine" << endl;
+    cout << "      --package PACKAGE           Set the package to be removed" << endl;
+    cout << "    package_search or search_packages NAME" << endl;
+    cout << "                                  Search for the specified package using the package manager of the specified virtual machine" << endl;
+    cout << "      --package PACKAGE           Set the package to be searched" << endl;
+    cout << "    send NAME                     Share the specified virtual machine to an end user (protected by a secret code)" << endl;
+    cout << "    receive                       Receive the virtual machine shared by an end user (protected by a secret code)" << endl << endl;
+
+    cout << "  container" << endl;
+    cout << "    create NAME                   Create a new container with the specified name" << endl;
+    cout << "    delete NAME                   Delete the specified container" << endl;
+    cout << "    view or enter NAME            Show a console interface" << endl;
+    cout << "    upgrade NAME                  Upgrade the specified container" << endl;
+    cout << "    list                          List all containers" << endl;
+    cout << "    stop NAME                     Stop the specified container" << endl;
+    cout << "    exec NAME                     Execute the given command in the console of the specified container" << endl;
+    cout << "      --command COMMAND           Set the command to be executed" << endl;
+    cout << "    package_download or download_packages NAME" << endl;
+    cout << "                                  Download the specified package using the package manager of the specified container" << endl;
+    cout << "      --package PACKAGE           Set the package to be downloaded" << endl;
+    cout << "    package_remove or remove_packages NAME" << endl;
+    cout << "                                  Remove the specified package using the package manager of the specified container" << endl;
+    cout << "      --package PACKAGE           Set the package to be removed" << endl;
+    cout << "    package_search or search_packages NAME" << endl;
+    cout << "                                  Search for the specified package using the package manager of the specified container" << endl;
+    cout << "      --package PACKAGE           Set the package to be searched" << endl;
+    cout << "    send NAME                     Share the specified container to an end user (protected by a secret code)" << endl;
+    cout << "    receive                       Receive the container shared by an end user (protected by a secret code)" << endl;
 }
 
 string exec(const char* cmd) {

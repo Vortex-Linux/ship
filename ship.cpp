@@ -103,7 +103,7 @@ void process_operands(int argc, char *argv[]) {
 
         if (strcmp(argv[i], "--help") == 0) {
             show_help();
-            return;
+            exit(0);
         }
 
         if (strcmp(argv[i], "--container") == 0 || strcmp(argv[i], "-ctr") == 0) {
