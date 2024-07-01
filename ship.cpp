@@ -1,5 +1,57 @@
 #include "ship.h"
 
+std::ostream& operator<<(std::ostream& os, const ShipMode& mode) {
+    switch (mode) {
+        case ShipMode::VM:
+            return os << "VM";
+        case ShipMode::CONTAINER:
+            return os << "Container";
+        default:
+            return os << "Unknown";
+    }
+}
+
+std::ostream& operator<<(std::ostream& os, const ShipAction& action) {
+   switch (action) {
+        case ShipAction::CREATE:
+            return os << "Create";
+        case ShipAction::DELETE:
+            return os << "Delete";
+        case ShipAction::SAVE:
+            return os << "Save";
+        case ShipAction::VIEW:
+            return os << "View";
+        case ShipAction::UPGRADE:
+            return os << "Upgrade";
+        case ShipAction::LIST:
+            return os << "List";
+        case ShipAction::START:
+            return os << "Start";
+        case ShipAction::PAUSE:
+            return os << "Pause";
+        case ShipAction::STOP:
+            return os << "Stop";
+        case ShipAction::RESUME:
+            return os << "Resume";
+        case ShipAction::EXEC:
+            return os << "Exec";
+        case ShipAction::PACKAGE_DOWNLOAD:
+            return os << "Package Download";
+        case ShipAction::PACKAGE_SEARCH:
+            return os << "Package Search";
+        case ShipAction::PACKAGE_REMOVE:
+            return os << "Package Remove";
+        case ShipAction::RECEIVE:
+            return os << "Receive";
+        case ShipAction::SEND:
+            return os << "Send";
+        case ShipAction::SHUTDOWN:
+            return os << "Shutdown";
+        default:
+            return os << "Unknown";
+   }
+}
+
 unordered_map<string, PackageManagerCommands> package_managers = {
     {"ship", {"sudo ship", "sudo ship search", "sudo ship install", "sudo ship remove"}},
     {"apk", {"sudo apk", "sudo apk search", "sudo apk add", "sudo apk del"}},
@@ -18,33 +70,6 @@ unordered_map<string, PackageManagerCommands> package_managers = {
     {"tce-load", {"sudo tce-load", "sudo tce-ab search", "sudo tce-load -wi", "sudo tce-remove"}},
     {"equo", {"sudo equo", "sudo equo search", "sudo equo install", "sudo equo remove"}},
     {"tazpkg", {"sudo tazpkg", "sudo tazpkg search", "sudo tazpkg install", "sudo tazpkg remove"}}
-};
-
-unordered_map<ShipMode, string> ship_mode_string_map = {
-    {ShipMode::UNKNOWN, ""},
-    {ShipMode::VM, "vm"},
-    {ShipMode::CONTAINER, "container"}
-};
-
-unordered_map<ShipAction, string> ship_action_string_map = {
-    {ShipAction::UNKNOWN, ""},
-    {ShipAction::CREATE, "create"},
-    {ShipAction::DELETE, "delete"},
-    {ShipAction::SAVE, "save"},
-    {ShipAction::VIEW, "view"},
-    {ShipAction::UPGRADE, "upgrade"},
-    {ShipAction::LIST, "list"},
-    {ShipAction::START, "start"},
-    {ShipAction::PAUSE, "pause"},
-    {ShipAction::STOP, "stop"},
-    {ShipAction::RESUME, "resume"},
-    {ShipAction::EXEC, "exec"},
-    {ShipAction::PACKAGE_DOWNLOAD, "package_download"},
-    {ShipAction::PACKAGE_SEARCH, "package_search"},
-    {ShipAction::PACKAGE_REMOVE, "package_remove"},
-    {ShipAction::RECEIVE, "receive"},
-    {ShipAction::SEND, "send"},
-    {ShipAction::SHUTDOWN, "shutdown"}
 };
 
 // Initializing the struct with empty strings
@@ -326,12 +351,10 @@ void process_operands(int argc, char *argv[]) {
         }
 
         if (ship_env.action == ShipAction::UNKNOWN) {
-            string ship_mode = ship_mode_string_map[ship_env.mode];
-            cout << "Ship found unknown operand " << argv[i] << " for entity " << ship_mode << "\n";
+            cout << "Ship found unknown operand " << argv[i] << " for entity " << ship_env.mode << "\n";
             cout << "For more information try ship --help\n";
         } else {
-            string ship_action = ship_action_string_map[ship_env.action];
-            cout << "Ship found unknown operand " << argv[i] << " for action " << ship_action << "\n";
+            cout << "Ship found unknown operand " << argv[i] << " for action " << ship_env.action << "\n";
         }
 
         exit(1);

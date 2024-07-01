@@ -36,7 +36,8 @@ enum class ShipMode {
     CONTAINER
 };
 
-extern unordered_map<ShipMode, string> ship_mode_string_map; 
+// Allows for using the << operator with ShipMode
+std::ostream& operator<<(std::ostream& os, const ShipMode& mode); 
 
 enum class ShipAction {
     UNKNOWN,
@@ -59,7 +60,8 @@ enum class ShipAction {
     SHUTDOWN,
 };
 
-extern unordered_map<ShipAction, string> ship_action_string_map;
+// Allows for using the << operator with ShipAction
+std::ostream& operator<<(std::ostream& os, const ShipAction& action);
 
 struct ShipEnviornment {
     ShipMode mode;
