@@ -20,19 +20,49 @@ unordered_map<string, PackageManagerCommands> package_managers = {
     {"tazpkg", {"sudo tazpkg", "sudo tazpkg search", "sudo tazpkg install", "sudo tazpkg remove"}}
 };
 
-string mode;
-string action;
-string command;
-string name;
-string package_manager_name;
-string packages;
-string source;
-string source_local;
-string memory_limit;
-string cpu_limit;
-string image;
-string iso_path;
-string disk_image_path;
+unordered_map<ShipMode, string> ship_mode_string_map = {
+    {ShipMode::UNKNOWN, ""},
+    {ShipMode::VM, "vm"},
+    {ShipMode::CONTAINER, "container"}
+};
+
+unordered_map<ShipAction, string> ship_action_string_map = {
+    {ShipAction::UNKNOWN, ""},
+    {ShipAction::CREATE, "create"},
+    {ShipAction::DELETE, "delete"},
+    {ShipAction::SAVE, "save"},
+    {ShipAction::VIEW, "view"},
+    {ShipAction::UPGRADE, "upgrade"},
+    {ShipAction::LIST, "list"},
+    {ShipAction::START, "start"},
+    {ShipAction::PAUSE, "pause"},
+    {ShipAction::STOP, "stop"},
+    {ShipAction::RESUME, "resume"},
+    {ShipAction::EXEC, "exec"},
+    {ShipAction::PACKAGE_DOWNLOAD, "package_download"},
+    {ShipAction::PACKAGE_SEARCH, "package_search"},
+    {ShipAction::PACKAGE_REMOVE, "package_remove"},
+    {ShipAction::RECEIVE, "receive"},
+    {ShipAction::SEND, "send"},
+    {ShipAction::SHUTDOWN, "shutdown"}
+};
+
+// Initializing the struct with empty strings
+ShipEnviornment ship_env = {
+    ShipMode::UNKNOWN,  // mode
+    ShipAction::UNKNOWN,  // action
+    "",  // command
+    "",  // name
+    "",  // package_manager_name
+    "",  // packages
+    "",  // source
+    "",  // source_local
+    "",  // memory_limit
+    "",  // cpu_limit
+    "",  // image
+    "",  // iso_path
+    "",  // disk_image_path
+};
 
 void process_operands(int argc, char *argv[]) {
     bool fetching_command = false;
@@ -44,19 +74,20 @@ void process_operands(int argc, char *argv[]) {
     bool fetching_memory_limit = false;
     int action_index = INT_MAX;
 
+
     for (int i = 1; i < argc; ++i) {
         if (fetching_command) {
             for (int j=i+1;j<argc;j++) {
-                command = command +  " " + argv[j];
+                ship_env.command = ship_env.command +  " " + argv[j];
             }
             break;
         }
 
         if (fetching_name) {
-            name = argv[i];
+            ship_env.name = argv[i];
             fetching_name = false;
             
-            if (action == "exec") {
+            if (ship_env.action == ShipAction::EXEC) {
                 fetching_command = true;
             }
             continue;
@@ -68,7 +99,7 @@ void process_operands(int argc, char *argv[]) {
                     i = j;
                     break;
                 }
-                packages += argv[j];
+                ship_env.packages += argv[j];
             }
             if (strcmp(argv[i], "--parameters") != 0 || strcmp(argv[i], "-p") != 0) {
                 break;
@@ -76,27 +107,27 @@ void process_operands(int argc, char *argv[]) {
         }
 
         if (fetching_source) {
-            source = argv[i];
-            source_local = "";
+            ship_env.source = argv[i];
+            ship_env.source_local = "";
             fetching_source = false;
             continue;
         }
 
         if (fetching_local_source) {
-            source_local = argv[i];
-            source = "";
+            ship_env.source_local = argv[i];
+            ship_env.source = "";
             fetching_local_source = false;
             continue;
         }
 
         if (fetching_cpu_limit) {
-            cpu_limit = argv[i];
+            ship_env.cpu_limit = argv[i];
             fetching_cpu_limit = false;
             continue;
         }
 
         if (fetching_memory_limit) {
-            memory_limit = argv[i];
+            ship_env.memory_limit = argv[i];
             fetching_memory_limit = false;
             continue;
         }
@@ -107,17 +138,17 @@ void process_operands(int argc, char *argv[]) {
         }
 
         if (strcmp(argv[i], "--container") == 0 || strcmp(argv[i], "-ctr") == 0) {
-            mode = "container";
+            ship_env.mode = ShipMode::CONTAINER;
             continue;
         }
 
         if (strcmp(argv[i], "--virtual-machine") == 0 || strcmp(argv[i], "-vm") == 0 ) {
-            mode = "vm";
+            ship_env.mode = ShipMode::VM;
             continue;
         }
 
-        if (strcmp(argv[i], "create") == 0 && action == "") {
-            action = "create";
+        if (strcmp(argv[i], "create") == 0 && ship_env.action == ShipAction::UNKNOWN) {
+            ship_env.action = ShipAction::CREATE;
             action_index = i;
             continue;
         }
@@ -127,129 +158,129 @@ void process_operands(int argc, char *argv[]) {
             continue;
         }
 
-        if (strcmp(argv[i], "--source") == 0 && action=="create") {
+        if (strcmp(argv[i], "--source") == 0 && ship_env.action== ShipAction::CREATE) {
             fetching_source = true;
             continue;
         }
 
-        if (strcmp(argv[i], "--source-local") == 0 && action=="create") {
+        if (strcmp(argv[i], "--source-local") == 0 && ship_env.action==ShipAction::CREATE) {
             fetching_local_source = true;
             continue;
         }
 
-        if (strcmp(argv[i], "--cpus") == 0 && action=="create") {
+        if (strcmp(argv[i], "--cpus") == 0 && ship_env.action==ShipAction::CREATE) {
             fetching_cpu_limit = true;
             continue;
         }
 
-        if ((strcmp(argv[i], "--memory") == 0 || strcmp(argv[i], "--mem") == 0) && action=="create") {
+        if ((strcmp(argv[i], "--memory") == 0 || strcmp(argv[i], "--mem") == 0) && ship_env.action==ShipAction::CREATE) {
             fetching_memory_limit = true;
             continue;
         }
 
-        if (strcmp(argv[i], "start") == 0 && action == "") {
-            action = "start";
+        if (strcmp(argv[i], "start") == 0 && ship_env.action == ShipAction::UNKNOWN) {
+            ship_env.action = ShipAction::START;
             action_index = i;
             continue;
         }
 
-        if (strcmp(argv[i], "delete") == 0 && action == "") {
-            action = "delete";
+        if (strcmp(argv[i], "delete") == 0 && ship_env.action == ShipAction::UNKNOWN) {
+            ship_env.action = ShipAction::DELETE;
             action_index = i;
             continue;
         }
 
-        if (strcmp(argv[i], "list") == 0 && action == "") {
-            action = "list";
+        if (strcmp(argv[i], "list") == 0 && ship_env.action == ShipAction::UNKNOWN) {
+            ship_env.action = ShipAction::LIST;
             action_index = i;
             continue;
         }
 
-        if ((strcmp(argv[i], "view") == 0 || strcmp(argv[i], "enter") == 0)&& action == "") {
-            action = "view";
+        if ((strcmp(argv[i], "view") == 0 || strcmp(argv[i], "enter") == 0)&& ship_env.action == ShipAction::UNKNOWN) {
+            ship_env.action = ShipAction::VIEW;
             action_index = i;
             continue;
         }
 
-        if (strcmp(argv[i], "view") == 0 && action == "") {
-            action = "view";
+        if (strcmp(argv[i], "view") == 0 && ship_env.action == ShipAction::UNKNOWN) {
+            ship_env.action = ShipAction::VIEW;
             action_index = i;
             continue;
         }
 
-        if (strcmp(argv[i], "save") == 0 && action == "") {
-            action = "save";
+        if (strcmp(argv[i], "save") == 0 && ship_env.action == ShipAction::UNKNOWN) {
+            ship_env.action = ShipAction::SAVE;
             action_index = i;
             continue;
         }
 
-        if (strcmp(argv[i], "shutdown") == 0 && action == "" && mode=="vm") {
-            action = "shutdown";
+        if (strcmp(argv[i], "shutdown") == 0 && ship_env.action == ShipAction::UNKNOWN && ship_env.mode==ShipMode::VM) {
+            ship_env.action = ShipAction::SHUTDOWN;
             action_index = i;
             continue;
         }
 
-        if (strcmp(argv[i], "stop") == 0 && action == "") {
-            action = "stop";
+        if (strcmp(argv[i], "stop") == 0 && ship_env.action == ShipAction::UNKNOWN) {
+            ship_env.action = ShipAction::STOP;
             action_index = i;
             continue;
         }
 
-        if ((strcmp(argv[i], "pause") == 0 || strcmp(argv[i], "suspend") == 0) && action == "") {
-            action = "pause";
+        if ((strcmp(argv[i], "pause") == 0 || strcmp(argv[i], "suspend") == 0) && ship_env.action == ShipAction::UNKNOWN) {
+            ship_env.action = ShipAction::PAUSE;
             action_index = i;
             continue;
         }
 
-        if (strcmp(argv[i], "resume") == 0 && action == "") {
-            action = "resume";
+        if (strcmp(argv[i], "resume") == 0 && ship_env.action == ShipAction::UNKNOWN) {
+            ship_env.action = ShipAction::RESUME;
             action_index = i;
             continue;
         }
 
-        if (strcmp(argv[i], "upgrade") == 0 && action == "") {
-            action = "upgrade";
+        if (strcmp(argv[i], "upgrade") == 0 && ship_env.action == ShipAction::UNKNOWN) {
+            ship_env.action = ShipAction::UPGRADE;
             action_index = i;
             continue;
         }
 
-        if ((strcmp(argv[i], "exec") == 0 || strcmp(argv[i], "run") == 0) && action == "") {
-            action = "exec";
+        if ((strcmp(argv[i], "exec") == 0 || strcmp(argv[i], "run") == 0) && ship_env.action == ShipAction::UNKNOWN) {
+            ship_env.action = ShipAction::EXEC;
             action_index = i;
             continue;
         }
 
-        if ((strcmp(argv[i], "package_download") == 0 || strcmp(argv[i], "download_packages") == 0 ) && action == "") {
-            action = "package_download";
+        if ((strcmp(argv[i], "package_download") == 0 || strcmp(argv[i], "download_packages") == 0 ) && ship_env.action == ShipAction::UNKNOWN) {
+            ship_env.action = ShipAction::PACKAGE_DOWNLOAD;
             action_index = i;
             continue;
         }
 
-        if ((strcmp(argv[i], "package_remove") == 0 || strcmp(argv[i], "remove_packages") == 0 )&& action == "") {
-            action = "package_remove";
+        if ((strcmp(argv[i], "package_remove") == 0 || strcmp(argv[i], "remove_packages") == 0 )&& ship_env.action == ShipAction::UNKNOWN) {
+            ship_env.action = ShipAction::PACKAGE_REMOVE;
             action_index = i;
             continue;
         }
 
-        if ((strcmp(argv[i], "package_search") == 0 || strcmp(argv[i], "search_packages") == 0 )&& action == "") {
-            action = "package_search";
+        if ((strcmp(argv[i], "package_search") == 0 || strcmp(argv[i], "search_packages") == 0 )&& ship_env.action == ShipAction::UNKNOWN) {
+            ship_env.action = ShipAction::PACKAGE_SEARCH;
             action_index = i;
             continue;
         }
 
-        if ((strcmp(argv[i], "receive") == 0 && action == "")) {
-            action = "receive";
+        if ((strcmp(argv[i], "receive") == 0 && ship_env.action == ShipAction::UNKNOWN)) {
+            ship_env.action = ShipAction::RECEIVE;
             action_index = i;
             continue;
         }
 
-        if ((strcmp(argv[i], "send") == 0 && action == "")) {
-            action = "send";
+        if ((strcmp(argv[i], "send") == 0 && ship_env.action == ShipAction::UNKNOWN)) {
+            ship_env.action = ShipAction::SEND;
             action_index = i;
             continue;
         }
 
-        if (strcmp(argv[i], "--command") == 0 && action == "exec") {
+        if (strcmp(argv[i], "--command") == 0 && ship_env.action == ShipAction::EXEC) {
             fetching_command = true;
             continue;
         }
@@ -265,40 +296,42 @@ void process_operands(int argc, char *argv[]) {
         }
 
         if (strcmp(argv[i], "--aur") == 1 && strcmp(argv[i], "-aur") == 0) {
-            package_manager_name = "pacman";
+            ship_env.package_manager_name = "pacman";
             continue;
         }
 
         if (strcmp(argv[i], "--apk") == 1 && strcmp(argv[i], "-aur") == 0) {
-            package_manager_name = "pacman";
+            ship_env.package_manager_name = "pacman";
             continue;
         }
 
         if (strcmp(argv[i], "--dnf") == 0 && strcmp(argv[i], "-dnf") == 0) {
-            package_manager_name = "dnf";
+            ship_env.package_manager_name = "dnf";
             continue;
         }
 
         if (strcmp(argv[i], "--apt") == 0 && strcmp(argv[i], "-apt") == 0) {
-            package_manager_name = "apt";
+            ship_env.package_manager_name = "apt";
             continue;
         }
 
         if (strcmp(argv[i], "--nix") == 0 && strcmp(argv[i], "-nix") == 0) {
-            package_manager_name = "nix";
+            ship_env.package_manager_name = "nix";
             continue;
         }
 
         if (i - 1 == action_index) {
-            name = argv[i];
+            ship_env.name = argv[i];
             continue;
         }
 
-        if (action == "") {
-            cout << "Ship found unknown operand " << argv[i] << " for entity " << mode << "\n";
+        if (ship_env.action == ShipAction::UNKNOWN) {
+            string ship_mode = ship_mode_string_map[ship_env.mode];
+            cout << "Ship found unknown operand " << argv[i] << " for entity " << ship_mode << "\n";
             cout << "For more information try ship --help\n";
         } else {
-            cout << "Ship found unknown operand " << argv[i] << " for action " << action << "\n";
+            string ship_action = ship_action_string_map[ship_env.action];
+            cout << "Ship found unknown operand " << argv[i] << " for action " << ship_action << "\n";
         }
 
         exit(1);
@@ -306,20 +339,20 @@ void process_operands(int argc, char *argv[]) {
 }
 
 void exec_action() {
-    if (mode == "vm") {
+    if (ship_env.mode == ShipMode::VM) {
         exec_action_for_vm();
-    } else if (mode == "container") {
+    } else if (ship_env.mode == ShipMode::CONTAINER) {
         exec_action_for_container();
     } else {
-        cout << "Are you using this action for vms " << name << "? (y/n,Note:The default behaviour is that the action is assumed to be for containers): ";
+        cout << "Are you using this action for vms " << ship_env.name << "? (y/n,Note:The default behaviour is that the action is assumed to be for containers): ";
         string confirm;
         getline(cin, confirm);
 
         if (confirm != "y" && confirm != "Y") {
-            mode = "container";
+            ship_env.mode = ShipMode::CONTAINER;
             exec_action_for_container();
         } else {
-            mode = "vm";
+            ship_env.mode = ShipMode::VM;
             exec_action_for_vm();
         }
 
