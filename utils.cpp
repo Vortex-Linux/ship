@@ -146,31 +146,31 @@ string get_absolute_path(const string &relative_path) {
 }
 
 void exec_package_manager_operations() {
-    if(mode=="container") {
+    if(ship_env.mode==ShipMode::CONTAINER) {
         find_container_package_manager();
     }else {
         find_vm_package_manager();
     }
 
-    auto it = package_managers.find(package_manager_name);
+    auto it = package_managers.find(ship_env.package_manager_name);
 
     if (it != package_managers.end()) {
         const PackageManagerCommands& commands = it->second;
 
-        if (action == "package_search") {
-            command = commands.search_command + " " + packages + " " + command;
-        } else if (action == "package_download") {
-            command = commands.install_command + " " + packages + " " + command;
-        } else if (action == "package_remove") {
-            command = commands.remove_command + " " + packages + " " + command;
+        if (ship_env.action == ShipAction::PACKAGE_SEARCH) {
+            ship_env.command = commands.search_command + " " + ship_env.packages + " " + ship_env.command;
+        } else if (ship_env.action == ShipAction::PACKAGE_DOWNLOAD) {
+            ship_env.command = commands.install_command + " " + ship_env.packages + " " + ship_env.command;
+        } else if (ship_env.action == ShipAction::PACKAGE_REMOVE) {
+            ship_env.command = commands.remove_command + " " + ship_env.packages + " " + ship_env.command;
         }
 
-        command = "yes | " + command;
+        ship_env.command = "yes | " + ship_env.command;
 
-        if(mode=="container") {
+        if(ship_env.mode==ShipMode::CONTAINER) {
             exec_command_container();
         } else {
-            action = "exec";
+            ship_env.action = ShipAction::EXEC;
             exec_command_vm();
         }
 
@@ -207,23 +207,23 @@ vector<string> split_string_by_line(const string& str) {
 }
 
 void send_file() {
-    if(mode=="container") {
-        string image = "/tmp/" + name;
+    if(ship_env.mode==ShipMode::CONTAINER) {
+        string image = "/tmp/" + ship_env.name;
 
-        string make_container_image_cmd = "docker commit " + name + " " + name;
+        string make_container_image_cmd = "docker commit " + ship_env.name + " " + ship_env.name;
         cout << exec(make_container_image_cmd.c_str()) << endl;
 
-        string make_container_tar_file_cmd = "docker save -o " + image + " " + name;
+        string make_container_tar_file_cmd = "docker save -o " + image + " " + ship_env.name;
         cout << exec(make_container_tar_file_cmd.c_str()) << endl;
 
         string send_container_image_cmd = "croc send " + image;
         cout << exec(send_container_image_cmd.c_str()) << endl;
 
-        string image_cleanup_cmd = "docker rmi " + name;
+        string image_cleanup_cmd = "docker rmi " + ship_env.name;
         cout << exec(image_cleanup_cmd.c_str()) << endl;
 
     }else {
-        string get_vm_disk_image_cmd = "sudo virsh domblklist " + name + " --details | awk '/source file/ {print $3}' | grep '.qcow2$'";
+        string get_vm_disk_image_cmd = "sudo virsh domblklist " + ship_env.name + " --details | awk '/source file/ {print $3}' | grep '.qcow2$'";
         string result = exec(get_vm_disk_image_cmd.c_str());
         string send_vm_cmd = "croc send " + get_absolute_path(result);
         cout << exec(send_vm_cmd.c_str()) << endl;
@@ -235,7 +235,7 @@ void receive_file() {
     cout << "Please type the secret code: ";
     getline(cin, code);
 
-    if(mode=="container") {
+    if(ship_env.mode==ShipMode::CONTAINER) {
         string set_croc_secret_cmd = "export CROC_SECRET=" + code;
         cout << exec(set_croc_secret_cmd.c_str()) << endl;
 
@@ -252,21 +252,21 @@ void receive_file() {
         cout << exec(create_container_cmd.c_str()) << endl;
 
     }else {
-        source_local = get_absolute_path("images/disk-images/");
+        ship_env.source_local = get_absolute_path("images/disk-images/");
 
         string set_croc_secret_cmd = "export CROC_SECRET=" + code;
         cout << exec(set_croc_secret_cmd.c_str()) << endl;
 
-        string receive_vm_cmd = "croc recv -o " + source_local;
+        string receive_vm_cmd = "croc recv -o " + ship_env.source_local;
         cout << exec(receive_vm_cmd.c_str()) << endl;
 
         string find_vm_image_cmd = "find /images/disk-images/  -type f -exec ls -t1 {} + | head -1";
         string vm_image = exec(find_vm_image_cmd.c_str());
 
-        size_t extension_starting_position = source_local.find(".");
-        string image_name = source_local.substr(0, extension_starting_position);
+        size_t extension_starting_position = ship_env.source_local.find(".");
+        string image_name = ship_env.source_local.substr(0, extension_starting_position);
 
-        name = image_name;
+        ship_env.name = image_name;
 
         create_vm();
   }

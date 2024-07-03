@@ -1,40 +1,40 @@
 #include "ship.h"
 
 void start_vm() {
-    string load_saved_cmd = "sudo virsh snapshot-revert --current " + name;
+    string load_saved_cmd = "sudo virsh snapshot-revert --current " + ship_env.name;
     exec(load_saved_cmd.c_str());
 
-    string state = get_vm_state(name);
+    string state = get_vm_state(ship_env.name);
 
     if (state.find("running") == string::npos) {
-          string start_cmd = "sudo virsh start " + name;
+          string start_cmd = "sudo virsh start " + ship_env.name;
           exec(start_cmd.c_str());
     }
 
-    cout << "VM " << name << " started successfully.\n";
+    cout << "VM " << ship_env.name << " started successfully.\n";
 
     cout << "Entering VM for like login proccess if its there as ship has no knowledge about the inside woorking of a particular os please type login details or anything to get ito where you can type commands and then use Ctrl+B and then D to exit\n";
     cout << "Press Enter to continue...\n";
     cin.get();
 
-    string create_tmux_session_cmd = "tmux new -d -s" + name;
+    string create_tmux_session_cmd = "tmux new -d -s" + ship_env.name;
     system(create_tmux_session_cmd.c_str());
 
-    string run_console_cmd = "tmux send-keys -t " + name + " 'sudo virsh console " + name + "' C-m";
+    string run_console_cmd = "tmux send-keys -t " + ship_env.name + " 'sudo virsh console " + ship_env.name + "' C-m";
     system(run_console_cmd.c_str());
 
 
-    string attach_console_session_cmd = "tmux attach-session -t " + name;
+    string attach_console_session_cmd = "tmux attach-session -t " + ship_env.name;
     system(attach_console_session_cmd.c_str());
 }
 
 void view_vm_console() {
-    string view_cmd = "tmux attach-session -t " + name;      
+    string view_cmd = "tmux attach-session -t " + ship_env.name;      
     system(view_cmd.c_str());
 }
 
 void view_vm_gui() {
-    string view_cmd = "sudo virt-viewer " + name; 
+    string view_cmd = "sudo virt-viewer " + ship_env.name; 
     system(view_cmd.c_str());
 }
 
@@ -51,17 +51,17 @@ void view_vm() {
 }
 
 void pause_vm() {
-    string view_cmd = "sudo virsh suspend " + name; 
+    string view_cmd = "sudo virsh suspend " + ship_env.name; 
     system(view_cmd.c_str());
 }
 
 void resume_vm() {
-    string view_cmd = "sudo virsh resume " + name; 
+    string view_cmd = "sudo virsh resume " + ship_env.name; 
     system(view_cmd.c_str());
 }
 
 void delete_old_snapshots() {
-    string list_snapshot_cmd = "sudo virsh snapshot-list --name " + name;
+    string list_snapshot_cmd = "sudo virsh snapshot-list --name " + ship_env.name;
     string snapshot_list = exec(list_snapshot_cmd.c_str());
     vector<string> snapshots = split_string_by_line(snapshot_list);
 
@@ -72,7 +72,7 @@ void delete_old_snapshots() {
     for (const auto& snapshot : snapshots) {
         if (snapshot != latest_snapshot) {
             cout << "Deleting old snapshot: " << snapshot << endl;
-            string delete_cmd = "sudo virsh snapshot-delete " + name + " " + snapshot;
+            string delete_cmd = "sudo virsh snapshot-delete " + ship_env.name + " " + snapshot;
             system(delete_cmd.c_str());
         }
     }
@@ -81,7 +81,7 @@ void delete_old_snapshots() {
 }
 
 void save_vm() {
-    string save_cmd = "sudo virsh snapshot-create --atomic " + name; 
+    string save_cmd = "sudo virsh snapshot-create --atomic " + ship_env.name; 
     system(save_cmd.c_str());
 
     delete_old_snapshots();
@@ -96,9 +96,9 @@ void shutdown_vm() {
         save_vm();
     }
 
-    string shutdown_cmd = "sudo virsh shutdown " + name; 
+    string shutdown_cmd = "sudo virsh shutdown " + ship_env.name; 
     system(shutdown_cmd.c_str()); 
-    string state = get_vm_state(name);
+    string state = get_vm_state(ship_env.name);
 
     if (state.find("running") != string::npos || state.find("paused") != string::npos) {
         cout << "The VM isnt responding do you want to forcefully shutdown the vm ? (y/n): ";
@@ -106,55 +106,55 @@ void shutdown_vm() {
         getline(cin, confirm);
 
         if (confirm != "y" && confirm != "Y") {
-            cout << "VM force shutdown proccess cancelled for " << name << "'.\n";
+            cout << "VM force shutdown proccess cancelled for " << ship_env.name << "'.\n";
             return;
         }
 
-        cout << "Forcefully shutting down " << name << ".\n";
-        string shutdown_cmd = "sudo virsh destroy " + name + "\n";
+        cout << "Forcefully shutting down " << ship_env.name << ".\n";
+        string shutdown_cmd = "sudo virsh destroy " + ship_env.name + "\n";
         system(shutdown_cmd.c_str());
     }
-    cout << "Successfully shutdown " << name; 
+    cout << "Successfully shutdown " << ship_env.name; 
 }
 
 void delete_vm() {
-    string state = get_vm_state(name);
+    string state = get_vm_state(ship_env.name);
     if (state.find("running") != string::npos || state.find("paused") != string::npos) {
-        cout << "Forcefully shutting down VM " << name << " before deletion.\n";
-        string shutdown_cmd = "sudo virsh destroy " + name;
+        cout << "Forcefully shutting down VM " << ship_env.name << " before deletion.\n";
+        string shutdown_cmd = "sudo virsh destroy " + ship_env.name;
         system(shutdown_cmd.c_str());
     }
 
-    string undefine_cmd = "sudo virsh undefine --nvram " + name;
+    string undefine_cmd = "sudo virsh undefine --nvram " + ship_env.name;
     exec(undefine_cmd.c_str());
-    cout << "VM " << name << " deleted successfully.\n";
+    cout << "VM " << ship_env.name << " deleted successfully.\n";
 }
 
 void create_vm() {
-    if (name.empty()) {
+    if (ship_env.name.empty()) {
         generate_vm_name();
     }
 
-    cout << "Creating new virtual machine for ship with name " + name + "\n";
+    cout << "Creating new virtual machine for ship with name " + ship_env.name + "\n";
 
-    if (action == "receive") {
-        cout << "Please specify the name of this VM(leaving this blank will set the name to the name given by the sender which is " << name << ")";
+    if (ship_env.action == ShipAction::RECEIVE) {
+        cout << "Please specify the name of this VM(leaving this blank will set the name to the name given by the sender which is " << ship_env.name << ")";
         string name_given;
         getline(cin, name_given);
         if(!name_given.empty()) {
-            name = name_given; 
+            ship_env.name = name_given; 
         }
     }
 
-    if (source.empty() && source_local.empty()) {
+    if (ship_env.source.empty() && ship_env.source_local.empty()) {
         cout << "Please specify the source of this VM (leave this blank if you want to specify a local source): ";
-        getline(cin, source);
+        getline(cin, ship_env.source);
     }
 
-    if (source_local.empty() && source.empty()) {
+    if (ship_env.source_local.empty() && ship_env.source.empty()) {
         cout << "Please specify the local source of this VM: ";
-        getline(cin, source_local);
-        if (source_local.empty() && source.empty()) {
+        getline(cin, ship_env.source_local);
+        if (ship_env.source_local.empty() && ship_env.source.empty()) {
             cout << "Ship failed to create a VM, no source has been specified.\n";
             exit(0);
         }
@@ -162,14 +162,14 @@ void create_vm() {
 
     get_iso_source();
 
-    if(!source_local.empty() && source.empty()) {
-        if (source_local.find_last_of(".") != string::npos) {
-            string extension = source_local.substr(source_local.find_last_of("."));
+    if(!ship_env.source_local.empty() && ship_env.source.empty()) {
+        if (ship_env.source_local.find_last_of(".") != string::npos) {
+            string extension = ship_env.source_local.substr(ship_env.source_local.find_last_of("."));
             if (extension == ".iso") {
-                iso_path = get_absolute_path(source_local);
+                ship_env.iso_path = get_absolute_path(ship_env.source_local);
                 create_disk_image();
             }else if (extension == ".qcow2" || extension == ".qcow") {
-                disk_image_path = get_absolute_path(source_local);
+                ship_env.disk_image_path = get_absolute_path(ship_env.source_local);
             }
         }
     }
@@ -187,9 +187,9 @@ string generate_vm_xml() {
     ostringstream vm_xml;
     vm_xml << R"(
 <domain type='kvm'>
-  <name>)" << name << R"(</name>
-  <memory unit='MiB'>)" << memory_limit << R"(</memory>
-  <vcpu placement='static'>)" << cpu_limit << R"(</vcpu>
+  <name>)" << ship_env.name << R"(</name>
+  <memory unit='MiB'>)" << ship_env.memory_limit << R"(</memory>
+  <vcpu placement='static'>)" << ship_env.cpu_limit << R"(</vcpu>
   <os>
     <type arch='x86_64' machine='pc-i440fx-2.9'>hvm</type>
     <boot dev='hd'/>
@@ -213,15 +213,15 @@ string generate_vm_xml() {
   <devices>
     <disk type='file' device='disk'>
       <driver name='qemu' type='qcow2'/>
-      <source file=')" << disk_image_path << R"('/>
+      <source file=')" << ship_env.disk_image_path << R"('/>
       <target dev='vda' bus='virtio'/>
     </disk>)";
 
-    if (!iso_path.empty()) {
+    if (!ship_env.iso_path.empty()) {
         vm_xml << R"(
     <disk type='file' device='cdrom'>
       <driver name='qemu' type='raw'/>
-      <source file=')" << iso_path << R"('/>
+      <source file=')" << ship_env.iso_path << R"('/>
       <target dev='sda' bus='sata'/>
       <readonly/>
     </disk>)";
@@ -255,7 +255,7 @@ string generate_vm_xml() {
 </domain>
 )";
 
-    string xml_filename = "/tmp/" + name + ".xml";
+    string xml_filename = "/tmp/" + ship_env.name + ".xml";
     ofstream xml_file(xml_filename);
     xml_file << vm_xml.str();
     xml_file.close();
@@ -271,37 +271,37 @@ void define_vm(const string& xml_filename) {
 }
 
 void start_vm_with_confirmation_prompt() {
-    cout << "Do you want to start the VM " << name << " right now? (y/n): ";
+    cout << "Do you want to start the VM " << ship_env.name << " right now? (y/n): ";
     string confirm;
     getline(cin, confirm);
 
     if (confirm == "y" || confirm == "Y") {
-        cout << "Starting VM " << name << "...\n";
+        cout << "Starting VM " << ship_env.name << "...\n";
     } else {
-        cout << "VM has not been started. You can start it later with 'ship start " << name << "'.\n";
+        cout << "VM has not been started. You can start it later with 'ship start " << ship_env.name << "'.\n";
         return;
     }
     start_vm();
 }
 
 void get_iso_source() {
-    if(!source.empty()) {
+    if(!ship_env.source.empty()) {
         cout << "Downloading iso to images(Please use ctrl+c after the download proccess is complete to come back to the main program)" << "\n";
-        string download_cmd = "aria2c --dir images/iso-images " + source;
+        string download_cmd = "aria2c --dir images/iso-images " + ship_env.source;
         system(download_cmd.c_str());
         cout << "Finding the path to the downloaded iso image" << "\n";
         string find_latest_image_cmd = "find images/iso-images  -type f -exec ls -t1 {} + | head -1";
-        source_local = exec(find_latest_image_cmd.c_str());
-        cout << "Found the path as " << source_local << "\n";
+        ship_env.source_local = exec(find_latest_image_cmd.c_str());
+        cout << "Found the path as " << ship_env.source_local << "\n";
     }
 }
 
 void create_disk_image() {
-    disk_image_path = get_absolute_path("./images/disk-images") + "/" + name + ".qcow2";
-    ifstream check_file(disk_image_path);
+    ship_env.disk_image_path = get_absolute_path("./images/disk-images") + "/" + ship_env.name + ".qcow2";
+    ifstream check_file(ship_env.disk_image_path);
     if (!check_file.good()) {
-        cout << "Creating disk image at: " << disk_image_path << endl;
-        string create_disk_cmd = "qemu-img create -f qcow2 " + disk_image_path + " 1P";
+        cout << "Creating disk image at: " << ship_env.disk_image_path << endl;
+        string create_disk_cmd = "qemu-img create -f qcow2 " + ship_env.disk_image_path + " 1P";
         system(create_disk_cmd.c_str());
     }
     check_file.close();
@@ -309,20 +309,20 @@ void create_disk_image() {
 
 void generate_vm_name() {
     int next_vm_number = get_next_available_vm_number();
-    name = "vm" + to_string(next_vm_number);
+    ship_env.name = "vm" + to_string(next_vm_number);
 }
 
 void set_memory_limit() {
-    if (memory_limit.empty()) {
+    if (ship_env.memory_limit.empty()) {
         int max_memory = stoi(exec("free -m | awk '/^Mem:/{print $2}'"));
-        memory_limit = to_string(max_memory);
+        ship_env.memory_limit = to_string(max_memory);
     }
 }
 
 void set_cpu_limit() {
-    if (cpu_limit.empty()) {
+    if (ship_env.cpu_limit.empty()) {
         int max_cpus = stoi(exec("nproc"));
-        cpu_limit = to_string(max_cpus);
+        ship_env.cpu_limit = to_string(max_cpus);
     }
 }
 
@@ -333,16 +333,16 @@ void start_vm(const string& name) {
 }
 bool exec_command_vm() {
     string start_marker = "MARKER_" + to_string(rand());
-    string start_marker_cmd = "tmux send-keys -t " + name + " '" + start_marker + "' C-m";
+    string start_marker_cmd = "tmux send-keys -t " + ship_env.name + " '" + start_marker + "' C-m";
     system(start_marker_cmd.c_str());
-    string run_cmd = "tmux send-keys -t " + name + " '" + command + "' C-m";
+    string run_cmd = "tmux send-keys -t " + ship_env.name + " '" + ship_env.command + "' C-m";
     system(run_cmd.c_str());
 
     string end_marker = "MARKER_" + to_string(rand());
-    string end_marker_cmd = "tmux send-keys -t " + name + " 'echo " + end_marker + "' C-m";
+    string end_marker_cmd = "tmux send-keys -t " + ship_env.name + " 'echo " + end_marker + "' C-m";
     system(end_marker_cmd.c_str());
 
-    string capture_cmd = "tmux capture-pane -t " + name + " -pS - | tail -n 2 | head -n 1";
+    string capture_cmd = "tmux capture-pane -t " + ship_env.name + " -pS - | tail -n 2 | head -n 1";
 
     while (true) {
         string output = exec(capture_cmd.c_str());
@@ -351,14 +351,14 @@ bool exec_command_vm() {
         }
     }
 
-    capture_cmd = "tmux capture-pane -t " + name + " -pS - | tac | grep -m1 -B " + to_string(INT_MAX) + " " + start_marker + " | tac | tail -n +3 | sed '/^\\s*$/d' | head -n -3";
+    capture_cmd = "tmux capture-pane -t " + ship_env.name + " -pS - | tac | grep -m1 -B " + to_string(INT_MAX) + " " + start_marker + " | tac | tail -n +3 | sed '/^\\s*$/d' | head -n -3";
     string output = exec(capture_cmd.c_str());
 
-    if (action == "exec") {
+    if (ship_env.action == ShipAction::EXEC) {
         cout << output;
     }
 
-    if (action != "exec" && output.find_first_not_of(' ') != string::npos) {
+    if (ship_env.action != ShipAction::EXEC && output.find_first_not_of(' ') != string::npos) {
         return true;
     }
 
@@ -366,55 +366,74 @@ bool exec_command_vm() {
 }
 
 bool check_vm_command_exists() {
-    command += " --version > /dev/null 2>&1 && echo 0";
+    ship_env.command += " --version > /dev/null 2>&1 && echo 0";
     bool result = exec_command_vm();
     return result;
 } 
 
 void find_vm_package_manager() {
-    string parameters = command;
+    string parameters = ship_env.command;
     for (const auto& package_manager : package_managers) {
-        command = package_manager.first;
+        ship_env.command = package_manager.first;
         if (check_vm_command_exists()) {
-            package_manager_name = package_manager.first;             
-            cout << "Package manager found as " << package_manager_name << " for container " << name << "\n";
-            command = parameters;
+            ship_env.package_manager_name = package_manager.first;             
+            cout << "Package manager found as " << ship_env.package_manager_name << " for container " << ship_env.name << "\n";
+            ship_env.command = parameters;
             return;
         }
     }
 }
 
 void exec_action_for_vm() {
-    if (!package_manager_name.empty()) {
+    if (!ship_env.package_manager_name.empty()) {
         
     }
 
-    if (action == "create") {
-        create_vm();
-    } else if (action == "start") {
-        start_vm();
-    } else if (action == "delete") {
-        delete_vm();
-    } else if (action == "view") {
-        view_vm();
-    } else if (action == "list") {
-        cout << list_vm();
-    } else if (action == "pause") {
-        pause_vm();
-    } else if (action == "resume") {
-        resume_vm();
-    } else if (action == "save") {
-        save_vm();
-    } else if (action == "shutdown") {
-        shutdown_vm();
-    } else if (action == "exec") {
-        exec_command_vm();
-    } else if (action == "package_download" || action == "package_search" || action == "package_remove") {
-        exec_package_manager_operations();
-    } else if (action == "receive") {
-        receive_file();
-    } else if (action == "send") {
-        send_file();
+    switch(ship_env.action) {
+        case ShipAction::CREATE:
+            create_vm();
+            break;
+        case ShipAction::START:
+            start_vm();
+            break;
+        case ShipAction::DELETE:
+            delete_vm();
+            break;
+        case ShipAction::VIEW:
+            view_vm();
+            break;
+        case ShipAction::LIST:
+            cout << list_vm();
+            break;
+        case ShipAction::PAUSE:
+            pause_vm();
+            break;
+        case ShipAction::RESUME:
+            resume_vm();
+            break;
+        case ShipAction::SAVE:
+            save_vm();
+            break;
+        case ShipAction::SHUTDOWN:
+            shutdown_vm();
+            break;
+        case ShipAction::EXEC:
+            exec_command_vm();
+            break;
+        case ShipAction::PACKAGE_DOWNLOAD:
+        case ShipAction::PACKAGE_SEARCH:
+        case ShipAction::PACKAGE_REMOVE:
+            exec_package_manager_operations();
+            break;
+        case ShipAction::RECEIVE:
+            receive_file();
+            break;
+        case ShipAction::SEND:
+            send_file();
+            break;
+        default: 
+            cout << "Invalid action for VM.\n";
+            break;
     }
 }
 

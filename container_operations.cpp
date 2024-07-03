@@ -1,60 +1,60 @@
 #include "ship.h"
 
 void stop_container() {
-    string cmd = "distrobox stop " + name;
+    string cmd = "distrobox stop " + ship_env.name;
     string result = exec(cmd.c_str());
     system(cmd.c_str());
 
 }
 
 void delete_container() {
-    string cmd = "distrobox rm " + name;
+    string cmd = "distrobox rm " + ship_env.name;
     system(cmd.c_str());
 }
 
 void create_container() {
-    if (name.empty()) {
+    if (ship_env.name.empty()) {
         int next_container_number = get_next_available_container_number();
-        name = "container_" + to_string(next_container_number);
-        cout << "Please specify the name of this container(leaving this blank will set the name to " << name << ")";
+        ship_env.name = "container_" + to_string(next_container_number);
+        cout << "Please specify the name of this container(leaving this blank will set the name to " << ship_env.name << ")";
         string name_given;
         getline(cin, name_given);
         if(!name_given.empty()) {
-            name = name_given; 
+            ship_env.name = name_given; 
         }
     }
 
-    if (image.empty()) {
+    if (ship_env.image.empty()) {
         cout << "Please specify the image/distro which container should be based on(By default the image/distro will be set to Arch Linux.\nAll the image names can be found at the containers distros section in https://distrobox.it/compatibility/#containers-distros): ";
-        getline(cin, image);
-        if (image.empty()) {
-            image = "quay.io/toolbx/arch-toolbox:latest";
+        getline(cin, ship_env.image);
+        if (ship_env.image.empty()) {
+            ship_env.image = "quay.io/toolbx/arch-toolbox:latest";
         }
     }
 
-    string cmd = "distrobox create " + name + " --image " + image;
+    string cmd = "distrobox create " + ship_env.name + " --image " + ship_env.image;
     system(cmd.c_str());
-    cout << "Container " << name << " created successfully.\n";
+    cout << "Container " << ship_env.name << " created successfully.\n";
 }
 
 void upgrade_container() {
-    string cmd = "distrobox upgrade " + name;
+    string cmd = "distrobox upgrade " + ship_env.name;
     system(cmd.c_str());
 }
 
 void view_container() {
-    string cmd = "distrobox enter " + name;
+    string cmd = "distrobox enter " + ship_env.name;
     system(cmd.c_str());
 }
 
 void exec_command_container() {
-    cout << command; 
-    string cmd = "distrobox enter " + name + " -- " + command;
+    cout << ship_env.command; 
+    string cmd = "distrobox enter " + ship_env.name + " -- " + ship_env.command;
     system(cmd.c_str());
 }
 
 bool check_container_command_exists(const string& command) {
-    string cmd = "distrobox enter " + name + " -- " + command + " --version > /dev/null 2>&1";
+    string cmd = "distrobox enter " + ship_env.name + " -- " + command + " --version > /dev/null 2>&1";
     int result = system(cmd.c_str());
     return result == 0;
 }
@@ -62,37 +62,52 @@ bool check_container_command_exists(const string& command) {
 void find_container_package_manager() {
     for (const auto& package_manager : package_managers) {
         if (check_container_command_exists(package_manager.first)) {
-            package_manager_name = package_manager.first;             
-            cout << "Package manager found as " << package_manager_name << " for container " << name << "\n";
+            ship_env.package_manager_name = package_manager.first;             
+            cout << "Package manager found as " << ship_env.package_manager_name << " for container " << ship_env.name << "\n";
         }
     }
 }
 
 void exec_action_for_container() {
-    if (!package_manager_name.empty()) {
+    if (!ship_env.package_manager_name.empty()) {
         
     }
-
-    if (action == "create") {
-        create_container();
-    } else if (action == "delete") {
-        delete_container();
-    } else if (action == "view") {
-        view_container();
-    } else if (action == "upgrade") {
-        upgrade_container();
-    } else if (action == "list") {
-        cout << list_container();
-    } else if (action == "stop") {
-        stop_container();
-    } else if (action == "exec") {
-        exec_command_container();
-    } else if (action == "package_download" || action == "package_search" || action == "package_remove") {
-        exec_package_manager_operations();
-    } else if (action == "receive") {
-        receive_file();
-    } else if (action == "send") {
-        send_file();
+    switch (ship_env.action) {
+        case ShipAction::CREATE:
+            create_container();
+            break;
+        case ShipAction::DELETE:
+            delete_container();
+            break; 
+        case ShipAction::VIEW:
+            view_container();
+            break;
+        case ShipAction::UPGRADE:
+            upgrade_container();
+            break;
+        case ShipAction::LIST:
+            cout << list_container();
+            break;
+        case ShipAction::STOP:
+            stop_container();
+            break;
+        case ShipAction::EXEC:
+            exec_command_container();
+            break;
+        case ShipAction::PACKAGE_DOWNLOAD:
+        case ShipAction::PACKAGE_SEARCH:
+        case ShipAction::PACKAGE_REMOVE:
+            exec_package_manager_operations();
+            break;
+        case ShipAction::RECEIVE:
+            receive_file();
+            break;
+        case ShipAction::SEND:
+            send_file();
+            break;
+        default:
+            cout << "Invalid action for container\n";
+            break;
     }
 }
 

@@ -30,19 +30,56 @@ struct PackageManagerCommands {
 
 extern unordered_map<string, PackageManagerCommands> package_managers;
 
-extern string mode;
-extern string action;
-extern string command;
-extern string name;
-extern string package_manager_name;
-extern string packages;
-extern string source;
-extern string source_local;
-extern string memory_limit;
-extern string cpu_limit;
-extern string image;
-extern string iso_path; 
-extern string disk_image_path; 
+enum class ShipMode {
+    UNKNOWN,
+    VM,
+    CONTAINER
+};
+
+// Allows for using the << operator with ShipMode
+std::ostream& operator<<(std::ostream& os, const ShipMode& mode); 
+
+enum class ShipAction {
+    UNKNOWN,
+    CREATE,
+    DELETE,
+    SAVE,
+    VIEW,
+    UPGRADE,
+    LIST,
+    START,
+    PAUSE,
+    STOP,
+    RESUME,
+    EXEC,
+    PACKAGE_DOWNLOAD,
+    PACKAGE_SEARCH,
+    PACKAGE_REMOVE,
+    RECEIVE,
+    SEND,
+    SHUTDOWN,
+};
+
+// Allows for using the << operator with ShipAction
+std::ostream& operator<<(std::ostream& os, const ShipAction& action);
+
+struct ShipEnviornment {
+    ShipMode mode;
+    ShipAction action;
+    string command;
+    string name;
+    string package_manager_name;
+    string packages;
+    string source;
+    string source_local;
+    string memory_limit;
+    string cpu_limit;
+    string image;
+    string iso_path;
+    string disk_image_path;
+};
+
+extern ShipEnviornment ship_env;
 
 void show_help();
 string exec(const char* cmd);
