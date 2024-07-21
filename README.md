@@ -1,14 +1,14 @@
 # Ship
-- Ship if a powerful tool made for VoyageLinux designed to enhance the user's capability of using various environments for various needs mainly package management and installing software tailored to specific platforms. <br>
+- Ship if a powerful tool made for Vortex Linux designed to enhance the user's capability of using various environments for various needs mainly package management and installing software tailored to specific platforms. <br>
 - It supports the use of virtual machines(virtual machines are managed using libvirt,virsh,qemu and other utilities for them)for providing isolated environments for installing package and doing whatever the user wants.It also supports the use of containers(Containers are managed using distrobox and docker),the containers do not provide isolated environments and should be used for installing packages from various distros.
 
 ## Setup and Installation 
 
-### Note:(Ship is the superutility of VoyageLinux but can still be used with other distros. If you are using VoyageLinux, Ship is available by default, and you don't have to download it.)
+### Note:(Ship is the superutility of Vortex Linux but can still be used with other distros. If you are using Vortex Linux, Ship is available by default, and you don't have to download it.)
 
 ### Debian based distros
 ```
-git clone https://github.com/VoyageLinux/ship
+git clone https://github.com/Vortex-Linux/ship.git
 sudo apt install qemu-kvm libvirt-daemon-system virt-viewer
 curl https://raw.githubusercontent.com/89luca89/distrobox/main/install | sudo sh
 wget https://github.com/schollz/croc/releases/download/v9.4.2/croc_9.4.2_Linux-64bit.deb
@@ -17,7 +17,7 @@ sudo usermod -a -G libvirt $user
 ```
 ### Fedora based distros
 ```
-git clone https://github.com/VoyageLinux/ship
+git clone https://github.com/Vortex-Linux/ship.git
 curl https://raw.githubusercontent.com/89luca89/distrobox/main/install | sudo sh
 sudo dnf install qemu croc @virtualization
 sudo usermod -a -G libvirt $user
@@ -25,7 +25,7 @@ sudo usermod -a -G libvirt $user
 
 ### Arch based distros
 ```
-git clone https://github.com/VoyageLinux/ship
+git clone https://github.com/Vortex-Linux/ship.git
 sudo pacman -S libvirt qemu-base distrobox docker croc virt-viewer
 sudo usermod -a -G libvirt $user
 ```

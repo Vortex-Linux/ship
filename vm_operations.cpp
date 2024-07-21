@@ -88,14 +88,6 @@ void save_vm() {
 }
 
 void shutdown_vm() {
-    cout << "Do you want to save the virtual machine before shutting it down: ? (y/n): ";     
-    string confirm;     
-    getline(cin, confirm); 
-
-    if (confirm == "y" || confirm == "Y") {
-        save_vm();
-    }
-
     string shutdown_cmd = "sudo virsh shutdown " + ship_env.name; 
     system(shutdown_cmd.c_str()); 
     string state = get_vm_state(ship_env.name);
@@ -131,6 +123,9 @@ void delete_vm() {
 }
 
 void create_vm() {
+    
+    bool custom_vm = true;
+
     if (ship_env.name.empty()) {
         generate_vm_name();
     }
@@ -147,30 +142,27 @@ void create_vm() {
     }
 
     if (ship_env.source.empty() && ship_env.source_local.empty()) {
-        cout << "Please specify the source of this VM (leave this blank if you want to specify a local source): ";
-        getline(cin, ship_env.source);
+        custom_vm = false;
+        get_tested_vm();
     }
 
     if (ship_env.source_local.empty() && ship_env.source.empty()) {
-        cout << "Please specify the local source of this VM: ";
-        getline(cin, ship_env.source_local);
-        if (ship_env.source_local.empty() && ship_env.source.empty()) {
-            cout << "Ship failed to create a VM, no source has been specified.\n";
-            exit(0);
-        }
+        cout << "Ship failed to create a VM because no valid source was specified.\n";
+        exit(0);
     }
 
     get_iso_source();
 
-    if(!ship_env.source_local.empty() && ship_env.source.empty()) {
-        if (ship_env.source_local.find_last_of(".") != string::npos) {
-            string extension = ship_env.source_local.substr(ship_env.source_local.find_last_of("."));
-            if (extension == ".iso") {
-                ship_env.iso_path = get_absolute_path(ship_env.source_local);
-                create_disk_image();
-            }else if (extension == ".qcow2" || extension == ".qcow") {
-                ship_env.disk_image_path = get_absolute_path(ship_env.source_local);
-            }
+    ship_env.source_local = trim_trailing_whitespaces(ship_env.source_local);
+
+    if (ship_env.source_local.find_last_of(".") != string::npos) {
+        string extension = ship_env.source_local.substr(ship_env.source_local.find_last_of("."));
+        cout << extension << endl;
+        if (extension == ".iso") {
+            ship_env.iso_path = get_absolute_path(ship_env.source_local);
+            create_disk_image();
+        }else if (extension == ".qcow2" || extension == ".qcow") {
+            ship_env.disk_image_path = get_absolute_path(ship_env.source_local);
         }
     }
 
@@ -180,7 +172,12 @@ void create_vm() {
     string xml_filename = generate_vm_xml();
     define_vm(xml_filename);
 
-    start_vm_with_confirmation_prompt();
+    if (!custom_vm) {
+        configure_vm();
+    } else {
+        start_vm_with_confirmation_prompt();
+    }
+
 }
 
 string generate_vm_xml() {
@@ -286,7 +283,7 @@ void start_vm_with_confirmation_prompt() {
 
 void get_iso_source() {
     if(!ship_env.source.empty()) {
-        cout << "Downloading iso to images(Please use ctrl+c after the download proccess is complete to come back to the main program)" << "\n";
+        cout << "Downloading iso to images" << "\n";
         string download_cmd = "aria2c --dir images/iso-images " + ship_env.source;
         system(download_cmd.c_str());
         cout << "Finding the path to the downloaded iso image" << "\n";
@@ -296,12 +293,93 @@ void get_iso_source() {
     }
 }
 
+void get_tested_vm() {
+    while (true) {
+        cout << "Please specify a vm from our tested and configured vms(use help to get the list of the available configured vms): ";
+        getline(cin, ship_env.source);
+        if (ship_env.source == "help") {
+            cout << "The available tested and configured vms are: " << endl;
+            cout << "tails" << endl;
+            cout << "whonix" << endl;
+            cout << "debian" << endl;
+            cout << "ubuntu" << endl;
+            cout << "arch" << endl;
+            cout << "gentoo" << endl;
+            cout << "fedora" << endl;
+            cout << "centos" << endl;
+            cout << "nix" << endl;
+            cout << "alpine" << endl;
+            cout << "Void" << endl;
+            cout << "freebsd" << endl;
+            cout << "openbsd" << endl;
+            cout << "netbsd" << endl;
+            cout << "dragonflybsd" << endl;
+            cout << "windows" << endl;
+            cout << "osx" << endl;
+        }else {
+            if (strcmp(ship_env.source.c_str(), "tails") == 0) {
+                ship_env.os = TestedVM::tails; 
+                ship_env.source = "https://download.tails.net/tails/stable/tails-amd64-6.4/tails-amd64-6.4.img";
+            }else if (strcmp(ship_env.source.c_str(), "whonix") == 0) {
+                ship_env.os = TestedVM::whonix; 
+                ship_env.source = "";
+            }else if (strcmp(ship_env.source.c_str(), "debian") == 0) {
+                ship_env.os = TestedVM::debian; 
+                ship_env.source = "";
+            }else if (strcmp(ship_env.source.c_str(), "ubuntu") == 0) {
+                ship_env.os = TestedVM::ubuntu; 
+                ship_env.source = "";
+            }else if (strcmp(ship_env.source.c_str(), "arch") == 0) {
+                ship_env.os = TestedVM::arch; 
+                ship_env.source = "https://geo.mirror.pkgbuild.com/images/latest/Arch-Linux-x86_64-basic.qcow2";
+            }else if (strcmp(ship_env.source.c_str(), "gentoo") == 0) {
+                ship_env.os = TestedVM::gentoo; 
+                ship_env.source = "";
+            }else if (strcmp(ship_env.source.c_str(), "fedora") == 0) {
+                ship_env.os = TestedVM::fedora; 
+                ship_env.source = "";
+            }else if (strcmp(ship_env.source.c_str(), "nix") == 0) {
+                ship_env.os = TestedVM::nix; 
+                ship_env.source = "";
+            }else if (strcmp(ship_env.source.c_str(), "alpine") == 0) {
+                ship_env.os = TestedVM::alpine; 
+                ship_env.source = "";
+            }else if (strcmp(ship_env.source.c_str(), "centos") == 0) {
+                ship_env.os = TestedVM::centos; 
+                ship_env.source = "";
+            }else if (strcmp(ship_env.source.c_str(), "Void") == 0) {
+                ship_env.os = TestedVM::Void; 
+                ship_env.source = "";
+            }else if (strcmp(ship_env.source.c_str(), "freebsd") == 0) {
+                ship_env.os = TestedVM::freebsd; 
+                ship_env.source = "";
+            }else if (strcmp(ship_env.source.c_str(), "openbsd") == 0) {
+                ship_env.os = TestedVM::openbsd; 
+                ship_env.source = "";
+            }else if (strcmp(ship_env.source.c_str(), "netbsd") == 0) {
+                ship_env.os = TestedVM::netbsd; 
+                ship_env.source = "";
+            }else if (strcmp(ship_env.source.c_str(), "dragonflybsd") == 0) {
+                ship_env.os = TestedVM::dragonflybsd; 
+                ship_env.source = "";
+            }else if (strcmp(ship_env.source.c_str(), "windows") == 0) {
+                ship_env.os = TestedVM::windows; 
+                ship_env.source = "";
+            }else if (strcmp(ship_env.source.c_str(), "osx") == 0) {
+                ship_env.os = TestedVM::osx; 
+                ship_env.source = "";
+            }
+            break;
+        }
+    }   
+}
+
 void create_disk_image() {
     ship_env.disk_image_path = get_absolute_path("./images/disk-images") + "/" + ship_env.name + ".qcow2";
     ifstream check_file(ship_env.disk_image_path);
     if (!check_file.good()) {
         cout << "Creating disk image at: " << ship_env.disk_image_path << endl;
-        string create_disk_cmd = "qemu-img create -f qcow2 " + ship_env.disk_image_path + " 1P";
+        string create_disk_cmd = "qemu-img create -f qcow2 " + ship_env.disk_image_path + " 1G";
         system(create_disk_cmd.c_str());
     }
     check_file.close();
@@ -326,11 +404,69 @@ void set_cpu_limit() {
     }
 }
 
+void configure_vm() {
+    cout << "Do you want do intial configuration for the proper working of  " << ship_env.name << " (y/n): ";
+    string confirm;
+    getline(cin, confirm);
+
+    if (confirm == "y" || confirm == "Y") {
+        cout << "Starting VM " << ship_env.name << "...\n";
+    } else {
+        cout << "VM has not been configured as indented but the vm has been made correctly and can be configured by yourself" << "'.\n";
+        return;
+    }
+    start_vm();
+
+    switch(ship_env.os) {
+        case TestedVM::tails:
+            return;
+        case TestedVM::whonix:
+            return;
+        case TestedVM::debian:
+            return;
+        case TestedVM::ubuntu:
+            return;
+        case TestedVM::arch:
+            ship_env.command = "sudo pacman-key --init";
+            exec_command_vm();
+            ship_env.command = "sudo pacman-key --populate-key archlinux";
+            exec_command_vm();
+            return;
+        case TestedVM::gentoo:
+            return;
+        case TestedVM::fedora:
+            return;
+        case TestedVM::nix:
+            return;
+        case TestedVM::alpine:
+            return;
+        case TestedVM::centos:
+            return;
+        case TestedVM::Void:
+            return;
+        case TestedVM::freebsd:
+            return;
+        case TestedVM::openbsd:
+            return;
+        case TestedVM::netbsd:
+            return;
+        case TestedVM::dragonflybsd:
+            return;
+        case TestedVM::windows:
+            return;
+        case TestedVM::osx:
+            return;
+        default:
+            return;
+    }
+}
+
 void start_vm(const string& name) {
     cout << "Starting VM " << name << "...\n";
     string start_cmd = "sudo virsh start " + name;
     exec(start_cmd.c_str());
 }
+
 bool exec_command_vm() {
     string start_marker = "MARKER_" + to_string(rand());
     string start_marker_cmd = "tmux send-keys -t " + ship_env.name + " '" + start_marker + "' C-m";
@@ -385,10 +521,6 @@ void find_vm_package_manager() {
 }
 
 void exec_action_for_vm() {
-    if (!ship_env.package_manager_name.empty()) {
-        
-    }
-
     switch(ship_env.action) {
         case ShipAction::CREATE:
             create_vm();

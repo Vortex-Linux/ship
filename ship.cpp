@@ -72,6 +72,47 @@ unordered_map<string, PackageManagerCommands> package_managers = {
     {"tazpkg", {"sudo tazpkg", "sudo tazpkg search", "sudo tazpkg install", "sudo tazpkg remove"}}
 };
 
+std::ostream& operator<<(std::ostream& os, const TestedVM& vm) {
+    switch (vm) {
+        case TestedVM::tails:
+            return os << "tails";
+        case TestedVM::whonix:
+            return os << "whonix";
+        case TestedVM::debian:
+            return os << "debian";
+        case TestedVM::ubuntu:
+            return os << "ubuntu";
+        case TestedVM::arch:
+            return os << "arch";
+        case TestedVM::gentoo:
+            return os << "gentoo";
+        case TestedVM::fedora:
+            return os << "fedora";
+        case TestedVM::nix:
+            return os << "nix";
+        case TestedVM::alpine:
+            return os << "alpine";
+        case TestedVM::centos:
+            return os << "centos";
+        case TestedVM::Void:
+            return os << "void";
+        case TestedVM::freebsd:
+            return os << "freebsd";
+        case TestedVM::openbsd:
+            return os << "openbsd";
+        case TestedVM::netbsd:
+            return os << "netbsd";
+        case TestedVM::dragonflybsd:
+            return os << "dragonflybsd";
+        case TestedVM::windows:
+            return os << "windows";
+        case TestedVM::osx:
+            return os << "osx";
+        default:
+            return os << "";
+    }
+}
+
 // Initializing the struct with empty strings
 ShipEnviornment ship_env = {
     ShipMode::UNKNOWN,  // mode
@@ -80,6 +121,7 @@ ShipEnviornment ship_env = {
     "",  // name
     "",  // package_manager_name
     "",  // packages
+    TestedVM::UNKNOWN, // os 
     "",  // source
     "",  // source_local
     "",  // memory_limit

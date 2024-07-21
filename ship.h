@@ -60,8 +60,32 @@ enum class ShipAction {
     SHUTDOWN,
 };
 
-// Allows for using the << operator with ShipAction
+// allows for using the << operator with shipaction
 std::ostream& operator<<(std::ostream& os, const ShipAction& action);
+
+enum class TestedVM {
+    UNKNOWN,
+    tails,
+    whonix,
+    debian,
+    ubuntu,
+    arch,
+    gentoo,
+    fedora,
+    centos,
+    nix,
+    alpine,
+    Void,
+    freebsd,
+    openbsd,
+    netbsd,
+    dragonflybsd,
+    windows,
+    osx,
+};
+
+// allows for using the << operator with testedvm
+std::ostream& operator<<(std::ostream& os, const TestedVM& vm);
 
 struct ShipEnviornment {
     ShipMode mode;
@@ -70,6 +94,7 @@ struct ShipEnviornment {
     string name;
     string package_manager_name;
     string packages;
+    TestedVM os;
     string source;
     string source_local;
     string memory_limit;
@@ -82,6 +107,7 @@ struct ShipEnviornment {
 extern ShipEnviornment ship_env;
 
 void show_help();
+string trim_trailing_whitespaces(const std::string& str);
 string exec(const char* cmd);
 void exec_package_manager_operations();
 vector<int> extract_numbers_with_prefix(const string& result,const string& prefix);
@@ -101,11 +127,13 @@ void save_vm();
 void generate_vm_name();
 void start_vm_with_confirmation_prompt();
 void get_iso_source();
+void get_tested_vm();
 void create_disk_image();
 void set_memory_limit();
 void set_cpu_limit();
 string generate_vm_xml();
 void define_vm(const string& xml_filename);
+void configure_vm();
 void view_vm_console();
 void view_vm_gui();
 void view_vm();
