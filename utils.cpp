@@ -60,11 +60,11 @@ void show_help() {
 }
 
 string trim_trailing_whitespaces(const string& str) {
-    size_t first = str.find_first_not_of(' ');
+    size_t first = str.find_first_not_of(" \n\r\t");
     if (first == string::npos) {
         return ""; 
     }
-    size_t last = str.find_last_not_of(' ');
+    size_t last = str.find_last_not_of(" \n\r\t");
     return str.substr(first, (last - first + 1));
 }
 

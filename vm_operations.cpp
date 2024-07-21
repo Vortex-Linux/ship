@@ -158,6 +158,7 @@ void create_vm() {
     if (ship_env.source_local.find_last_of(".") != string::npos) {
         string extension = ship_env.source_local.substr(ship_env.source_local.find_last_of("."));
         cout << extension << endl;
+
         if (extension == ".iso") {
             ship_env.iso_path = get_absolute_path(ship_env.source_local);
             create_disk_image();
