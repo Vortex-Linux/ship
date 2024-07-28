@@ -1,5 +1,21 @@
 #include "ship.h"
 
+void pass_password_to_tmux() {
+    string capture_tmux_last_line_cmd = "tmux capture-pane -p -S -1 -t " + ship_env.name + " | tail -n 1";
+
+    sleep(1);
+
+    while (exec((capture_tmux_last_line_cmd.c_str())).find("password for") != string::npos) {
+        cout << "Please provide your root password: ";     
+        string root_password;     
+        getline(cin, root_password); 
+ 
+        ship_env.command = root_password;
+        system_command_vm();
+
+        sleep(1);
+    }
+}
 void start_vm() {
     string load_saved_cmd = "sudo virsh snapshot-revert --current " + ship_env.name;
     exec(load_saved_cmd.c_str());
@@ -13,19 +29,13 @@ void start_vm() {
 
     cout << "VM " << ship_env.name << " started successfully.\n";
 
-    cout << "Entering VM for like login proccess if its there as ship has no knowledge about the inside woorking of a particular os please type login details or anything to get ito where you can type commands and then use Ctrl+B and then D to exit\n";
-    cout << "Press Enter to continue...\n";
-    cin.get();
-
     string create_tmux_session_cmd = "tmux new -d -s" + ship_env.name;
     system(create_tmux_session_cmd.c_str());
 
-    string run_console_cmd = "tmux send-keys -t " + ship_env.name + " 'sudo virsh console " + ship_env.name + "' C-m";
-    system(run_console_cmd.c_str());
+    ship_env.command = "sudo virsh console " + ship_env.name;
+    system_command_vm();
 
-
-    string attach_console_session_cmd = "tmux attach-session -t " + ship_env.name;
-    system(attach_console_session_cmd.c_str());
+    pass_password_to_tmux();
 }
 
 void view_vm_console() {
@@ -157,7 +167,6 @@ void create_vm() {
 
     if (ship_env.source_local.find_last_of(".") != string::npos) {
         string extension = ship_env.source_local.substr(ship_env.source_local.find_last_of("."));
-        cout << extension << endl;
 
         if (extension == ".iso") {
             ship_env.iso_path = get_absolute_path(ship_env.source_local);
@@ -208,7 +217,9 @@ string generate_vm_xml() {
     <timer name='hpet' present='no'/>
     <timer name='hypervclock' present='yes'/>
   </clock>
-  <devices>
+  <devices
+vm_operations.cpp:486:1: error: expected declaration before '}' token
+  486 | }>
     <disk type='file' device='disk'>
       <driver name='qemu' type='qcow2'/>
       <source file=')" << ship_env.disk_image_path << R"('/>
@@ -369,6 +380,9 @@ void get_tested_vm() {
             }else if (strcmp(ship_env.source.c_str(), "osx") == 0) {
                 ship_env.os = TestedVM::osx; 
                 ship_env.source = "";
+            }else {
+                cout << "The specified vm is not available as a tested and configured vm" << endl;
+                continue;
             }
             break;
         }
@@ -428,11 +442,17 @@ void configure_vm() {
         case TestedVM::ubuntu:
             return;
         case TestedVM::arch:
+            ship_env.command  = "arch";
+            system_command_vm();
+            system_command_vm();
+
             ship_env.command = "sudo pacman-key --init";
             exec_command_vm();
+
             ship_env.command = "sudo pacman-key --populate-key archlinux";
             exec_command_vm();
             return;
+
         case TestedVM::gentoo:
             return;
         case TestedVM::fedora:
@@ -468,12 +488,17 @@ void start_vm(const string& name) {
     exec(start_cmd.c_str());
 }
 
+void system_command_vm() {
+    string run_cmd = "tmux send-keys -t " + ship_env.name + " '" + ship_env.command + "' C-m";
+    system(run_cmd.c_str());
+}
+
 bool exec_command_vm() {
     string start_marker = "MARKER_" + to_string(rand());
     string start_marker_cmd = "tmux send-keys -t " + ship_env.name + " '" + start_marker + "' C-m";
     system(start_marker_cmd.c_str());
-    string run_cmd = "tmux send-keys -t " + ship_env.name + " '" + ship_env.command + "' C-m";
-    system(run_cmd.c_str());
+
+    system_command_vm();
 
     string end_marker = "MARKER_" + to_string(rand());
     string end_marker_cmd = "tmux send-keys -t " + ship_env.name + " 'echo " + end_marker + "' C-m";
