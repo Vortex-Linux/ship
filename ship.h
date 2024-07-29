@@ -18,8 +18,12 @@
 #include <unistd.h>
 #include <iomanip>
 #include <random>
+#include <boost/property_tree/ptree.hpp>
+#include <boost/property_tree/ini_parser.hpp>
 
 using namespace std;
+
+extern boost::property_tree::ptree pt;
 
 struct PackageManagerCommands {
     string base_command;
@@ -107,6 +111,7 @@ struct ShipEnviornment {
 extern ShipEnviornment ship_env;
 
 void show_help();
+string find_settings_file();
 string trim_trailing_whitespaces(const std::string& str);
 string exec(const char* cmd);
 void exec_package_manager_operations();
@@ -120,6 +125,7 @@ void send_file();
 void receive_file();
 void delete_old_snapshots();
 void pass_password_to_tmux();
+void run_startup_commands();
 void start_vm();
 string list_vm();
 void delete_vm();

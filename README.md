@@ -9,7 +9,7 @@
 ### Debian based distros
 ```
 git clone https://github.com/Vortex-Linux/ship.git
-sudo apt install qemu-kvm libvirt-daemon-system virt-viewer
+sudo apt install qemu-kvm libvirt-daemon-system virt-viewer libboost-all-dev
 curl https://raw.githubusercontent.com/89luca89/distrobox/main/install | sudo sh
 wget https://github.com/schollz/croc/releases/download/v9.4.2/croc_9.4.2_Linux-64bit.deb
 sudo dpkg -i croc-*.deb
@@ -19,14 +19,14 @@ sudo usermod -a -G libvirt $user
 ```
 git clone https://github.com/Vortex-Linux/ship.git
 curl https://raw.githubusercontent.com/89luca89/distrobox/main/install | sudo sh
-sudo dnf install qemu croc @virtualization
+sudo dnf install qemu croc @virtualization boost-devel
 sudo usermod -a -G libvirt $user
 ```
 
 ### Arch based distros
 ```
 git clone https://github.com/Vortex-Linux/ship.git
-sudo pacman -S libvirt qemu-base distrobox docker croc virt-viewer
+sudo pacman -S libvirt qemu-base distrobox docker croc virt-viewer boost
 sudo usermod -a -G libvirt $user
 ```
 

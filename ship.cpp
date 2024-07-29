@@ -1,5 +1,7 @@
 #include "ship.h"
 
+boost::property_tree::ptree pt;
+
 std::ostream& operator<<(std::ostream& os, const ShipMode& mode) {
     switch (mode) {
         case ShipMode::VM:

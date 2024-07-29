@@ -281,3 +281,10 @@ void receive_file() {
   }
 }
 
+string find_settings_file() {
+    if (ship_env.mode==ShipMode::CONTAINER){
+        return get_absolute_path("./settings/container-settings" + ship_env.name + ".ini");
+    }else {
+        return get_absolute_path("./settings/vm-settings" + ship_env.name + ".ini");
+    }
+}

@@ -16,6 +16,32 @@ void pass_password_to_tmux() {
         sleep(1);
     }
 }
+
+void run_startup_commands() {
+    boost::property_tree::ini_parser::read_ini(find_settings_file(), pt);
+    
+    bool system_commands_left = true;
+    bool exec_commands_left = true;
+    int current_command_number = 1;
+
+    while(system_commands_left || exec_commands_left) {
+        try {
+            ship_env.command = pt.get<std::string>("system.command_" + current_command_number);
+            system_command_vm();
+        } catch(...) {
+            system_commands_left = false;
+        }
+        
+        try {
+            ship_env.command = pt.get<std::string>("exec.command_" + current_command_number);
+            exec_command_vm();
+        } catch(...) {
+            exec_commands_left = false;
+        }  
+        current_command_number +=1 ;
+    }
+}
+
 void start_vm() {
     string load_saved_cmd = "sudo virsh snapshot-revert --current " + ship_env.name;
     exec(load_saved_cmd.c_str());
@@ -36,6 +62,8 @@ void start_vm() {
     system_command_vm();
 
     pass_password_to_tmux();
+
+    run_startup_commands();
 }
 
 void view_vm_console() {
@@ -217,9 +245,7 @@ string generate_vm_xml() {
     <timer name='hpet' present='no'/>
     <timer name='hypervclock' present='yes'/>
   </clock>
-  <devices
-vm_operations.cpp:486:1: error: expected declaration before '}' token
-  486 | }>
+  <devices>
     <disk type='file' device='disk'>
       <driver name='qemu' type='qcow2'/>
       <source file=')" << ship_env.disk_image_path << R"('/>
@@ -268,6 +294,10 @@ vm_operations.cpp:486:1: error: expected declaration before '}' token
     ofstream xml_file(xml_filename);
     xml_file << vm_xml.str();
     xml_file.close();
+
+    ship_env.command = "touch " + get_absolute_path("./settings/vm-settings") + "/" + ship_env.name + ".ini";
+    cout << ship_env.command;
+    system(ship_env.command.c_str());
 
     return xml_filename;
 }
@@ -442,9 +472,14 @@ void configure_vm() {
         case TestedVM::ubuntu:
             return;
         case TestedVM::arch:
-            ship_env.command  = "arch";
-            system_command_vm();
-            system_command_vm();
+            boost::property_tree::ini_parser::read_ini(find_settings_file(), pt);
+
+            pt.put("system.command_1", "arch");
+            pt.put("system.command_2", "arch");
+
+            boost::property_tree::ini_parser::write_ini(find_settings_file(), pt);
+
+            run_startup_commands();
 
             ship_env.command = "sudo pacman-key --init";
             exec_command_vm();
