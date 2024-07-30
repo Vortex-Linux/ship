@@ -17,28 +17,47 @@ void pass_password_to_tmux() {
     }
 }
 
+void wait_for_vm_ready() {
+    while(true) {
+        string capture_tmux_last_line_cmd = "tmux capture-pane -p -S -1 -t " + ship_env.name + " | tail -n 1";
+        string output = exec(capture_tmux_last_line_cmd.c_str());
+
+        output = trim_trailing_whitespaces(output);
+
+        if (!output.empty()) {
+            break;
+        }
+        sleep(1);
+    }
+}
+
 void run_startup_commands() {
     boost::property_tree::ini_parser::read_ini(find_settings_file(), pt);
-    
+
     bool system_commands_left = true;
     bool exec_commands_left = true;
     int current_command_number = 1;
 
     while(system_commands_left || exec_commands_left) {
         try {
-            ship_env.command = pt.get<std::string>("system.command_" + current_command_number);
+            ship_env.command = pt.get<std::string>("system.command_" + std::to_string(current_command_number));
             system_command_vm();
-        } catch(...) {
+        } catch(const boost::property_tree::ptree_bad_path&) {
             system_commands_left = false;
         }
-        
+
+        sleep(1);
+
         try {
-            ship_env.command = pt.get<std::string>("exec.command_" + current_command_number);
+            ship_env.command = pt.get<std::string>("exec.command_" + std::to_string(current_command_number));
             exec_command_vm();
-        } catch(...) {
+        } catch(const boost::property_tree::ptree_bad_path&) {
             exec_commands_left = false;
-        }  
-        current_command_number +=1 ;
+        } 
+
+        sleep(1);
+
+        current_command_number += 1;
     }
 }
 
@@ -63,6 +82,8 @@ void start_vm() {
 
     pass_password_to_tmux();
 
+    wait_for_vm_ready();
+    
     run_startup_commands();
 }
 
@@ -296,7 +317,6 @@ string generate_vm_xml() {
     xml_file.close();
 
     ship_env.command = "touch " + get_absolute_path("./settings/vm-settings") + "/" + ship_env.name + ".ini";
-    cout << ship_env.command;
     system(ship_env.command.c_str());
 
     return xml_filename;

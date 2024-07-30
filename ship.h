@@ -126,6 +126,7 @@ void receive_file();
 void delete_old_snapshots();
 void pass_password_to_tmux();
 void run_startup_commands();
+void wait_for_vm_ready();
 void start_vm();
 string list_vm();
 void delete_vm();

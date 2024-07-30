@@ -1,6 +1,6 @@
 # Ship
 - Ship if a powerful tool made for Vortex Linux designed to enhance the user's capability of using various environments for various needs mainly package management and installing software tailored to specific platforms. <br>
-- It supports the use of virtual machines(virtual machines are managed using libvirt,virsh,qemu and other utilities for them)for providing isolated environments for installing package and doing whatever the user wants.It also supports the use of containers(Containers are managed using distrobox and docker),the containers do not provide isolated environments and should be used for installing packages from various distros.
+- It supports the use of virtual machines(virtual machines are managed using libvirt,virsh,qemu and other utilities for them)for providing isolated/unisolated environments for installing package and doing whatever the user wants.It also supports the use of containers(Containers are managed using distrobox and docker),the containers do not provide isolated environments and should be used for installing packages from various distros.
 
 ## Setup and Installation 
 
