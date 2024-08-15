@@ -381,7 +381,13 @@ void get_tested_vm() {
         }else {
             if (strcmp(ship_env.source.c_str(), "tails") == 0) {
                 ship_env.os = TestedVM::tails; 
-                ship_env.source = "https://download.tails.net/tails/stable/tails-amd64-6.4/tails-amd64-6.4.img";
+
+                string find_image_folder_link_cmd = "lynx -dump -listonly -nonumbers https://mirrors.edge.kernel.org/tails/stable/ | grep https://mirrors.edge.kernel.org/tails/stable/tails-amd64";
+                ship_env.source = trim_trailing_whitespaces(exec(find_image_folder_link_cmd.c_str()));
+
+                string find_image_file_link_cmd = "lynx -dump -listonly -nonumbers " + ship_env.source + " | grep -E 'iso$' | grep -v '\\.sig$'";
+                ship_env.source = exec(find_image_file_link_cmd.c_str());
+
             }else if (strcmp(ship_env.source.c_str(), "whonix") == 0) {
                 ship_env.os = TestedVM::whonix; 
                 ship_env.source = "";
