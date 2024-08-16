@@ -9,25 +9,37 @@
 ### Debian based distros
 ```
 git clone https://github.com/Vortex-Linux/ship.git
-sudo apt install qemu-kvm libvirt-daemon-system virt-viewer libboost-all-dev lynx
+sudo apt install qemu-kvm libvirt-daemon-system virt-viewer libboost-all-dev lynx cloud-init
 curl https://raw.githubusercontent.com/89luca89/distrobox/main/install | sudo sh
 wget https://github.com/schollz/croc/releases/download/v9.4.2/croc_9.4.2_Linux-64bit.deb
 sudo dpkg -i croc-*.deb
 sudo usermod -a -G libvirt $user
+sudo systemctl enable --now cloud-init-local.service
+sudo systemctl enable --now cloud-init.service
+sudo systemctl enable --now cloud-config.service
+sudo systemctl enable --now cloud-final.service
 ```
 ### Fedora based distros
 ```
 git clone https://github.com/Vortex-Linux/ship.git
 curl https://raw.githubusercontent.com/89luca89/distrobox/main/install | sudo sh
-sudo dnf install qemu croc @virtualization boost-devel lynx
+sudo dnf install qemu croc @virtualization boost-devel lynx cloud-init
 sudo usermod -a -G libvirt $user
+sudo systemctl enable --now cloud-init-local.service
+sudo systemctl enable --now cloud-init.service
+sudo systemctl enable --now cloud-config.service
+sudo systemctl enable --now cloud-final.service
 ```
 
 ### Arch based distros
 ```
 git clone https://github.com/Vortex-Linux/ship.git
-sudo pacman -S libvirt qemu-base distrobox docker croc virt-viewer boost lynx
+sudo pacman -S libvirt qemu-base distrobox docker croc virt-viewer boost lynx cloud-init
 sudo usermod -a -G libvirt $user
+sudo systemctl enable --now cloud-init-local.service
+sudo systemctl enable --now cloud-init.service
+sudo systemctl enable --now cloud-config.service
+sudo systemctl enable --now cloud-final.service
 ```
 
 ### Compiling

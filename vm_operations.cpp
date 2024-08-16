@@ -302,6 +302,9 @@ string generate_vm_xml() {
     <console type='pty'>
       <target type='virtio'/>
     </console>
+    <serial type='pty'>
+      <target port='0'/>
+    </serial>
     <sound model='ich9'/>
     <video>
       <model type='qxl' vram='65536' heads='1'/>
@@ -390,10 +393,13 @@ void get_tested_vm() {
 
             }else if (strcmp(ship_env.source.c_str(), "whonix") == 0) {
                 ship_env.os = TestedVM::whonix; 
-                ship_env.source = "";
+
+                string find_image_file_link_cmd = "lynx -dump -listonly -nonumbers https://www.whonix.org/wiki/KVM | grep -E '.qcow2$'";
+                ship_env.source = exec(find_image_file_link_cmd.c_str());
+
             }else if (strcmp(ship_env.source.c_str(), "debian") == 0) {
                 ship_env.os = TestedVM::debian; 
-                ship_env.source = "";
+                ship_env.source = "https://cdimage.debian.org/images/cloud/bookworm/latest/debian-12-nocloud-amd64.qcow2";
             }else if (strcmp(ship_env.source.c_str(), "ubuntu") == 0) {
                 ship_env.os = TestedVM::ubuntu; 
                 ship_env.source = "";
