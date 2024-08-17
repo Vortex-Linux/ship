@@ -169,5 +169,6 @@ void exec_action_for_container();
 void exec_action_for_vm();
 string get_absolute_path(const string &relative_path);
 string generate_mac_address();
+std::string get_executable_dir();
 #endif // SHIP_H
 

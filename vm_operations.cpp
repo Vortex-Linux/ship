@@ -363,12 +363,12 @@ string generate_vm_xml() {
     )";
 
 
-    string xml_filename = "/tmp/" + ship_env.name + ".xml";
+    string xml_filename = get_executable_dir() + ship_env.name + ".xml";
     ofstream xml_file(xml_filename);
     xml_file << vm_xml.str();
     xml_file.close();
 
-    ship_env.command = "touch " + get_absolute_path("./settings/vm-settings") + "/" + ship_env.name + ".ini";
+    ship_env.command = "touch " + get_executable_dir() + "settings/vm-settings/" + ship_env.name + ".ini";
     system(ship_env.command.c_str());
 
     return xml_filename;
@@ -398,7 +398,7 @@ void start_vm_with_confirmation_prompt() {
 void get_iso_source() {
     if(!ship_env.source.empty()) {
         cout << "Downloading iso to images" << "\n";
-        string download_cmd = "aria2c --dir images/iso-images " + ship_env.source;
+        string download_cmd = "aria2c --dir " + get_executable_dir() + "images/iso-images " + ship_env.source;
         system(download_cmd.c_str());
         cout << "Finding the path to the downloaded iso image" << "\n";
         string find_latest_image_cmd = "find images/iso-images  -type f -exec ls -t1 {} + | head -1";
@@ -501,7 +501,7 @@ void get_tested_vm() {
 }
 
 void create_disk_image() {
-    ship_env.disk_image_path = get_absolute_path("./images/disk-images") + "/" + ship_env.name + ".qcow2";
+    ship_env.disk_image_path = get_executable_dir() + "images/disk-images/" + ship_env.name + ".qcow2";
     ifstream check_file(ship_env.disk_image_path);
     if (!check_file.good()) {
         cout << "Creating disk image at: " << ship_env.disk_image_path << endl;

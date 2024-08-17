@@ -261,7 +261,7 @@ void receive_file() {
         cout << exec(create_container_cmd.c_str()) << endl;
 
     }else {
-        ship_env.source_local = get_absolute_path("images/disk-images/");
+        ship_env.source_local = get_executable_dir() + "images/disk-images/";
 
         string set_croc_secret_cmd = "export CROC_SECRET=" + code;
         cout << exec(set_croc_secret_cmd.c_str()) << endl;
@@ -283,8 +283,22 @@ void receive_file() {
 
 string find_settings_file() {
     if (ship_env.mode==ShipMode::CONTAINER){
-        return get_absolute_path("./settings/container-settings/" + ship_env.name + ".ini");
+        return get_executable_dir() + "settings/container-settings/" + ship_env.name + ".ini";
     }else {
-        return get_absolute_path("./settings/vm-settings/" + ship_env.name + ".ini");
+        return get_executable_dir() + "settings/vm-settings/" + ship_env.name + ".ini";
     }
+}
+
+std::string get_executable_dir() {
+    char path[PATH_MAX];
+    ssize_t len = readlink("/proc/self/exe", path, sizeof(path) - 1);
+    if (len != -1) {
+        path[len] = '\0';
+        char* last_slash = strrchr(path, '/');
+        if (last_slash) {
+            last_slash[1] = '\0'; 
+        }
+        return std::string(path);
+    }
+    return std::string();
 }
