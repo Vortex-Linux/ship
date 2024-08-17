@@ -299,20 +299,69 @@ string generate_vm_xml() {
     <graphics type='vnc' port='-1' autoport='yes' listen='0.0.0.0'>
       <listen type='address' address='0.0.0.0'/>
     </graphics>
-    <console type='pty'>
-      <target type='virtio'/>
-    </console>
-    <serial type='pty'>
-      <target port='0'/>
-    </serial>
     <sound model='ich9'/>
     <video>
       <model type='qxl' vram='65536' heads='1'/>
     </video>
     <memballoon model='virtio'/>
-  </devices>
-</domain>
 )";
+    switch(ship_env.os) {
+        case TestedVM::tails:
+            break;
+        case TestedVM::whonix:
+            break;
+        case TestedVM::debian:
+            vm_xml << R"(
+              <console type='pty'>
+                <target type='virtio'/>
+              </console>
+              <serial type='pty'>
+                <target port='0'/>
+              </serial>
+            )";
+            break;
+        case TestedVM::ubuntu:
+            break;
+        case TestedVM::arch:
+            vm_xml << R"(
+              <console type='pty'>
+                <target type='virtio'/>
+              </console>
+            )";
+            break;
+        case TestedVM::gentoo:
+            break;
+        case TestedVM::fedora:
+            break;
+        case TestedVM::nix:
+            break;
+        case TestedVM::alpine:
+            break;
+        case TestedVM::centos:
+            break;
+        case TestedVM::Void:
+            break;
+        case TestedVM::freebsd:
+            break;
+        case TestedVM::openbsd:
+            break;
+        case TestedVM::netbsd:
+            break;
+        case TestedVM::dragonflybsd:
+            break;
+        case TestedVM::windows:
+            break;
+        case TestedVM::osx:
+            break;
+        default:
+            break;
+    }
+
+    vm_xml << R"(
+        </devices>
+      </domain>
+    )";
+
 
     string xml_filename = "/tmp/" + ship_env.name + ".xml";
     ofstream xml_file(xml_filename);
