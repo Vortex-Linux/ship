@@ -312,21 +312,21 @@ string generate_vm_xml() {
             break;
         case TestedVM::debian:
             vm_xml << R"(
-              <console type='pty'>
-                <target type='virtio'/>
-              </console>
-              <serial type='pty'>
-                <target port='0'/>
-              </serial>
+      <console type='pty'>
+        <target type='virtio'/>
+      </console>
+      <serial type='pty'>
+        <target port='0'/>
+      </serial>
             )";
             break;
         case TestedVM::ubuntu:
             break;
         case TestedVM::arch:
             vm_xml << R"(
-              <console type='pty'>
-                <target type='virtio'/>
-              </console>
+      <console type='pty'>
+        <target type='virtio'/>
+      </console>
             )";
             break;
         case TestedVM::gentoo:
@@ -358,12 +358,12 @@ string generate_vm_xml() {
     }
 
     vm_xml << R"(
-        </devices>
-      </domain>
+  </devices>
+</domain>
     )";
 
 
-    string xml_filename = get_executable_dir() + ship_env.name + ".xml";
+    string xml_filename = "/tmp/" + ship_env.name + ".xml";
     ofstream xml_file(xml_filename);
     xml_file << vm_xml.str();
     xml_file.close();
