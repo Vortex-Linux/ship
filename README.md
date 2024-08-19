@@ -30,6 +30,34 @@ sudo pacman -S libvirt qemu-base distrobox docker croc virt-viewer boost lynx
 sudo usermod -a -G libvirt $user
 ```
 
+### NixOS
+
+You need the `kvm` kernel module for virtualization to work.
+Choose either `kvm-intel` or `kvm-amd` depending on your CPU.
+Make sure you have virtualization enabled in your BIOS!
+```
+boot.kernelModules = [ ... "kvm-intel" ... ];
+```
+
+Enable `libvirtd`
+```
+virtualisation.libvirtd.enable = true;
+```
+
+Add the user to the `docker` and `libvirtd` groups:
+```nix
+users.users.my_username = {
+  ...
+  extraGroups = [ ... "docker" "libvirtd" ... ];
+  ...
+};
+```
+
+After rebooting your machine, run:
+```
+nix develop
+```
+
 ### Compiling
 Pre compiled executables files are provided in the repo, but in the case that its not compatible or you are want to contribute and want to try your changes you can compile the binaries yourself,run these commands:
 ```
