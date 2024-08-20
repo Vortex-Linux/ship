@@ -149,9 +149,10 @@ void save_vm() {
 void shutdown_vm() {
     string shutdown_cmd = "sudo virsh shutdown " + ship_env.name; 
     system(shutdown_cmd.c_str()); 
-    string state = get_vm_state(ship_env.name);
-
-    if (state.find("running") != string::npos || state.find("paused") != string::npos) {
+    
+    string shutdown_signal = "sudo virsh event --event lifecycle --timeout 5 " + ship_env.name;
+    bool timeout = system(shutdown_signal.c_str());
+    if (timeout) {
         cout << "The VM isnt responding do you want to forcefully shutdown the vm ? (y/n): ";
         string confirm;
         getline(cin, confirm);
