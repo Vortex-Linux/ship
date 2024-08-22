@@ -82,7 +82,7 @@ string exec(const char* cmd) {
 }
 
 string list_vm() {
-    string cmd = "sudo virsh list --all";
+    string cmd = "virsh list --all";
     string result = exec(cmd.c_str());
     return result;
 }
@@ -94,7 +94,7 @@ string list_container() {
 }
 
 string get_vm_state(const string &vm_name) {
-    string cmd = "sudo virsh domstate " + vm_name;
+    string cmd = "virsh domstate " + vm_name;
     return exec(cmd.c_str());
 }
 
@@ -130,7 +130,7 @@ int get_next_available_number_in_command_output(const string& command,const stri
 }
 
 int get_next_available_vm_number(){
-    string command = "sudo virsh list --all | grep vm";
+    string command = "virsh list --all | grep vm";
     string prefix = "vm";
     int next_vm_number = get_next_available_number_in_command_output(command,prefix);
     return next_vm_number;
@@ -232,7 +232,7 @@ void send_file() {
         cout << exec(image_cleanup_cmd.c_str()) << endl;
 
     }else {
-        string get_vm_disk_image_cmd = "sudo virsh domblklist " + ship_env.name + " --details | awk '/source file/ {print $3}' | grep '.qcow2$'";
+        string get_vm_disk_image_cmd = "virsh domblklist " + ship_env.name + " --details | awk '/source file/ {print $3}' | grep '.qcow2$'";
         string result = exec(get_vm_disk_image_cmd.c_str());
         string send_vm_cmd = "croc send " + get_absolute_path(result);
         cout << exec(send_vm_cmd.c_str()) << endl;
@@ -301,4 +301,89 @@ std::string get_executable_dir() {
         return std::string(path);
     }
     return std::string();
+}
+
+
+bool is_user_in_group(const std::string& group) {
+    std::string command = "id -nG \"$USER\" | grep -qw \"" + group + "\"";
+    return (system(command.c_str()) == 0);
+}
+
+void add_user_to_group(const std::string& group) {
+    if (!is_user_in_group(group)) {
+        std::cout << "User is not in the " << group << " group." << std::endl;
+        std::cout << "Adding user to the " << group << " group..." << std::endl;
+        std::string command = "sudo usermod -aG " + group + " $USER";
+        if (system(command.c_str()) == 0) {
+            std::cout << "User successfully added to the " << group << " group." << std::endl;
+            std::cout << "Please log out and log back in for the changes to take effect." << std::endl;
+            exit(0);
+        } else {
+            std::cerr << "Failed to add the user to the " << group << " group." << std::endl;
+        }
+    } 
+}
+
+void append_line_to_file(const std::string& file_path, const std::string& line) {
+    std::string command = "echo \"" + line + "\" | sudo tee -a \"" + file_path + "\" > /dev/null";
+
+    int result = system(command.c_str());
+
+    if (result != 0) {
+        std::cout << "Failed to append to file " << file_path << std::endl;
+        exit(EXIT_FAILURE);
+    } else {
+        std::cout << "Successfully appended line to " << file_path << std::endl;
+    }
+}
+
+bool check_line_present(const std::string& file_path, const std::string& line) {
+    std::ifstream file(file_path);
+    std::string file_line;
+
+    if (!file) {
+        std::cout << "Failed to open file " << file_path << std::endl;
+        exit(0);
+    }
+
+    while (std::getline(file, file_line)) {
+        if (file_line == line) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+void ensure_line_in_file(const std::string& file_path, const std::string& line) {
+    if (!check_line_present(file_path, line)) {
+        append_line_to_file(file_path, line);
+    } 
+}
+
+void ensure_libvirt_config() {
+    const std::string config_file = "/etc/libvirt/libvirtd.conf";
+
+    const std::string groupLine = "unix_sock_group = libvirt";
+    const std::string permsLine = "unix_sock_rw_perms = 0770";
+
+    ensure_line_in_file(config_file, groupLine);
+    ensure_line_in_file(config_file, permsLine);
+
+    std::string response;
+    std::cout << "Configured libvirt to allow all users to have access to the systemwide configurations." << std::endl;
+    std::cout << "A system reboot is required for the changes to take effect." << std::endl;
+    std::cout << "Would you like to reboot the system now? (y/n): ";
+    std::getline(std::cin, response);
+
+    if (response == "y" || response == "Y") {
+        std::cout << "Rebooting the system..." << std::endl;
+        int result = system("sudo systemctl reboot");
+        if (result != 0) {
+            std::cerr << "Failed to reboot the system. Exit code: " << result << std::endl;
+            exit(EXIT_FAILURE);
+        }
+    } else {
+        std::cout << "Please remember to reboot the system later to apply these changes which are essential for the proper working of ship." << std::endl;
+    }
 }

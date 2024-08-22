@@ -62,13 +62,13 @@ void run_startup_commands() {
 }
 
 void start_vm() {
-    string load_saved_cmd = "sudo virsh snapshot-revert --current " + ship_env.name;
+    string load_saved_cmd = "virsh snapshot-revert --current " + ship_env.name;
     exec(load_saved_cmd.c_str());
 
     string state = get_vm_state(ship_env.name);
 
     if (state.find("running") == string::npos) {
-          string start_cmd = "sudo virsh start " + ship_env.name;
+          string start_cmd = "virsh start " + ship_env.name;
           exec(start_cmd.c_str());
     }
 
@@ -77,7 +77,7 @@ void start_vm() {
     string create_tmux_session_cmd = "tmux new -d -s" + ship_env.name;
     system(create_tmux_session_cmd.c_str());
 
-    ship_env.command = "sudo virsh console " + ship_env.name;
+    ship_env.command = "virsh console " + ship_env.name;
     system_command_vm();
 
     pass_password_to_tmux();
@@ -93,7 +93,7 @@ void view_vm_console() {
 }
 
 void view_vm_gui() {
-    string view_cmd = "sudo virt-viewer " + ship_env.name; 
+    string view_cmd = "virt-viewer " + ship_env.name; 
     system(view_cmd.c_str());
 }
 
@@ -110,17 +110,17 @@ void view_vm() {
 }
 
 void pause_vm() {
-    string view_cmd = "sudo virsh suspend " + ship_env.name; 
+    string view_cmd = "virsh suspend " + ship_env.name; 
     system(view_cmd.c_str());
 }
 
 void resume_vm() {
-    string view_cmd = "sudo virsh resume " + ship_env.name; 
+    string view_cmd = "virsh resume " + ship_env.name; 
     system(view_cmd.c_str());
 }
 
 void delete_old_snapshots() {
-    string list_snapshot_cmd = "sudo virsh snapshot-list --name " + ship_env.name;
+    string list_snapshot_cmd = "virsh snapshot-list --name " + ship_env.name;
     string snapshot_list = exec(list_snapshot_cmd.c_str());
     vector<string> snapshots = split_string_by_line(snapshot_list);
 
@@ -131,7 +131,7 @@ void delete_old_snapshots() {
     for (const auto& snapshot : snapshots) {
         if (snapshot != latest_snapshot) {
             cout << "Deleting old snapshot: " << snapshot << endl;
-            string delete_cmd = "sudo virsh snapshot-delete " + ship_env.name + " " + snapshot;
+            string delete_cmd = "virsh snapshot-delete " + ship_env.name + " " + snapshot;
             system(delete_cmd.c_str());
         }
     }
@@ -140,17 +140,17 @@ void delete_old_snapshots() {
 }
 
 void save_vm() {
-    string save_cmd = "sudo virsh snapshot-create --atomic " + ship_env.name; 
+    string save_cmd = "virsh snapshot-create --atomic " + ship_env.name; 
     system(save_cmd.c_str());
 
     delete_old_snapshots();
 }
 
 void shutdown_vm() {
-    string shutdown_cmd = "sudo virsh shutdown " + ship_env.name; 
+    string shutdown_cmd = "virsh shutdown " + ship_env.name; 
     system(shutdown_cmd.c_str()); 
     
-    string shutdown_signal = "sudo virsh event --event lifecycle --timeout 5 " + ship_env.name;
+    string shutdown_signal = "virsh event --event lifecycle --timeout 5 " + ship_env.name;
     bool timeout = system(shutdown_signal.c_str());
     if (timeout) {
         cout << "The VM isnt responding do you want to forcefully shutdown the vm ? (y/n): ";
@@ -163,7 +163,7 @@ void shutdown_vm() {
         }
 
         cout << "Forcefully shutting down " << ship_env.name << ".\n";
-        string shutdown_cmd = "sudo virsh destroy " + ship_env.name + "\n";
+        string shutdown_cmd = "virsh destroy " + ship_env.name + "\n";
         system(shutdown_cmd.c_str());
     }
     cout << "Successfully shutdown " << ship_env.name; 
@@ -173,11 +173,11 @@ void delete_vm() {
     string state = get_vm_state(ship_env.name);
     if (state.find("running") != string::npos || state.find("paused") != string::npos) {
         cout << "Forcefully shutting down VM " << ship_env.name << " before deletion.\n";
-        string shutdown_cmd = "sudo virsh destroy " + ship_env.name;
+        string shutdown_cmd = "virsh destroy " + ship_env.name;
         system(shutdown_cmd.c_str());
     }
 
-    string undefine_cmd = "sudo virsh undefine --nvram " + ship_env.name;
+    string undefine_cmd = "virsh undefine --nvram " + ship_env.name;
     exec(undefine_cmd.c_str());
     cout << "VM " << ship_env.name << " deleted successfully.\n";
 }
@@ -376,7 +376,7 @@ string generate_vm_xml() {
 }
 
 void define_vm(const string& xml_filename) {
-    string define_cmd = "sudo virsh define " + xml_filename;
+    string define_cmd = "virsh define " + xml_filename;
     exec(define_cmd.c_str());
 
     cout << "New VM configuration defined.\n";
@@ -563,10 +563,10 @@ void configure_vm() {
 
             run_startup_commands();
 
-            ship_env.command = "sudo pacman-key --init";
+            ship_env.command = "pacman-key --init";
             exec_command_vm();
 
-            ship_env.command = "sudo pacman-key --populate-key archlinux";
+            ship_env.command = "pacman-key --populate-key archlinux";
             exec_command_vm();
             return;
 
@@ -601,7 +601,7 @@ void configure_vm() {
 
 void start_vm(const string& name) {
     cout << "Starting VM " << name << "...\n";
-    string start_cmd = "sudo virsh start " + name;
+    string start_cmd = "virsh start " + name;
     exec(start_cmd.c_str());
 }
 
@@ -664,6 +664,9 @@ void find_vm_package_manager() {
 }
 
 void exec_action_for_vm() {
+    std::string group = "libvirt";
+    add_user_to_group(group);
+
     switch(ship_env.action) {
         case ShipAction::CREATE:
             create_vm();
