@@ -324,6 +324,7 @@ void add_user_to_group(const std::string& group) {
     } 
 }
 
+//Part of ensure_libvirt_config(),this will be removed if its still unused after the rele//as of v0.1
 void append_line_to_file(const std::string& file_path, const std::string& line) {
     std::string command = "echo \"" + line + "\" | sudo tee -a \"" + file_path + "\" > /dev/null";
 
@@ -337,6 +338,7 @@ void append_line_to_file(const std::string& file_path, const std::string& line) 
     }
 }
 
+//Part of ensure_libvirt_config(),this will be removed if its still unused after the rele//as of v0.1
 bool check_line_present(const std::string& file_path, const std::string& line) {
     std::ifstream file(file_path);
     std::string file_line;
@@ -355,20 +357,24 @@ bool check_line_present(const std::string& file_path, const std::string& line) {
     return false;
 }
 
+//This as of now doesnt work,this will be removed if its still unused after the release o//f v0.1
 void ensure_line_in_file(const std::string& file_path, const std::string& line) {
     if (!check_line_present(file_path, line)) {
         append_line_to_file(file_path, line);
     } 
 }
 
+//This as of now doesnt work,this will be removed if its still unused after the release o//f v0.1
 void ensure_libvirt_config() {
     const std::string config_file = "/etc/libvirt/libvirtd.conf";
 
-    const std::string groupLine = "unix_sock_group = libvirt";
-    const std::string permsLine = "unix_sock_rw_perms = 0770";
+    const std::string group_line = "unix_sock_group = libvirt";
+    const std::string read_permission_line = "unix_sock_ro_perms = 0770";
+    const std::string write_permission_line = "unix_sock_rw_perms = 0770";
 
-    ensure_line_in_file(config_file, groupLine);
-    ensure_line_in_file(config_file, permsLine);
+    ensure_line_in_file(config_file, group_line);
+    ensure_line_in_file(config_file, read_permission_line);
+    ensure_line_in_file(config_file, write_permission_line);
 
     std::string response;
     std::cout << "Configured libvirt to allow all users to have access to the systemwide configurations." << std::endl;
