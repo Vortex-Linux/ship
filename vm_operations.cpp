@@ -230,6 +230,8 @@ void create_vm() {
     set_cpu_limit();
 
     string xml_filename = generate_vm_xml();
+    append_polkit_rule();
+    create_default_network_if_needed();
     define_vm(xml_filename);
 
     if (!custom_vm) {
@@ -238,6 +240,65 @@ void create_vm() {
         start_vm_with_confirmation_prompt();
     }
 
+}
+
+void create_default_network_if_needed() {
+    string output = exec("virsh net-list --all");
+    if (output.find("default") == string::npos) {
+        cout << "Default network not found. Creating default network...\n";
+
+        const char* default_network_xml = R"(
+<network>
+  <name>default</name>
+  <bridge name='virbr0' stp='on' delay='0'/>
+  <forward mode='nat'/>
+  <ip address='192.168.122.1' netmask='255.255.255.0'>
+    <dhcp>
+      <range start='192.168.122.2' end='192.168.122.254'/>
+    </dhcp>
+  </ip>
+</network>
+        )";
+
+        string default_network_xml_file = "/tmp/default-network.xml";
+        ofstream xml_file(default_network_xml_file);
+        xml_file << default_network_xml;
+        xml_file.close();
+
+        system(("virsh net-define " + default_network_xml_file).c_str());
+        system("virsh net-start default");
+        system("virsh net-autostart default");
+
+        remove(default_network_xml_file.c_str());
+    } 
+}
+
+void append_polkit_rule() {
+    const char* polkit_rule_file = "/etc/polkit-1/rules.d/50-libvirt.rules";  
+
+    const char* polkit_rule = R"(
+polkit.addRule(function(action, subject) {
+    if (action.id.indexOf('org.libvirt.unix.manage') == 0 &&
+        subject.isInGroup('libvirt')) {
+        return polkit.Result.YES;
+    }
+});
+)";
+
+    ship_env.command = "sudo grep -q org.libvirt.unix.manage " + std::string(polkit_rule_file);
+
+    int result = system(ship_env.command.c_str());
+
+    if (result != 0) {
+        ship_env.command = "echo \"" + std::string(polkit_rule) + "\" | sudo tee -a " + std::string(polkit_rule_file);
+        system(ship_env.command.c_str());
+        std::cout << "Polkit rule for giving manage permissions to all users who are part of the libvirt group has been added to " << polkit_rule_file << std::endl;
+
+        std::cout << "Restarting polkit service to let it the rule take effect" << std::endl;
+
+        ship_env.command = "sudo systemctl restart polkit";
+        system(ship_env.command.c_str());
+    }
 }
 
 string generate_vm_xml() {
