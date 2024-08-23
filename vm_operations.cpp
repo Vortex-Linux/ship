@@ -169,6 +169,26 @@ void shutdown_vm() {
     cout << "Successfully shutdown " << ship_env.name; 
 }
 
+void clean_vm_resources() {
+    cout << "Deleting all resources which are not needed anymore." << endl;;
+    ship_env.command = "virsh domblklist " + ship_env.name + " --details | awk '{print $4}' | tail -n +3 | head -n -1";
+    std::string image_paths = exec(ship_env.command.c_str());
+
+    std::istringstream stream(image_paths);
+    std::string image_path;
+
+    while (std::getline(stream, image_path)) {
+        std::cout << "Deleting " << image_path << endl;
+        ship_env.command = "rm " + image_path;
+        system(ship_env.command.c_str());
+    }
+
+    ship_env.command = "rm " + get_executable_dir() + "settings/vm-settings/" + ship_env.name + ".ini";
+    system(ship_env.command.c_str());
+
+    cout << "Successfully deleted all resources which are not needed anymore." << endl;;
+}
+
 void delete_vm() {
     string state = get_vm_state(ship_env.name);
     if (state.find("running") != string::npos || state.find("paused") != string::npos) {
@@ -177,9 +197,12 @@ void delete_vm() {
         system(shutdown_cmd.c_str());
     }
 
+    clean_vm_resources();
+
     string undefine_cmd = "virsh undefine --nvram " + ship_env.name;
     exec(undefine_cmd.c_str());
     cout << "VM " << ship_env.name << " deleted successfully.\n";
+
 }
 
 void create_vm() {

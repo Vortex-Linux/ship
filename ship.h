@@ -129,6 +129,7 @@ void run_startup_commands();
 void wait_for_vm_ready();
 void start_vm();
 string list_vm();
+void clean_vm_resources();
 void delete_vm();
 void create_vm();
 void save_vm();
