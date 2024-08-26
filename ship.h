@@ -137,7 +137,7 @@ void generate_vm_name();
 void start_vm_with_confirmation_prompt();
 void get_iso_source();
 void get_tested_vm();
-void create_default_network_if_needed();
+void create_ship_network_if_needed();
 void append_polkit_rule();
 void create_disk_image();
 void set_memory_limit();

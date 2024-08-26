@@ -254,7 +254,7 @@ void create_vm() {
 
     string xml_filename = generate_vm_xml();
     append_polkit_rule();
-    create_default_network_if_needed();
+    create_ship_network_if_needed();
     define_vm(xml_filename);
 
     if (!custom_vm) {
@@ -265,34 +265,39 @@ void create_vm() {
 
 }
 
-void create_default_network_if_needed() {
+void create_ship_network_if_needed() {
     string output = exec("virsh net-list --all");
-    if (output.find("default") == string::npos) {
-        cout << "Default network not found. Creating default network...\n";
+    if (output.find("ship") == string::npos) {
+        cout << "Ship network not found. Creating ship network...\n";
 
-        const char* default_network_xml = R"(
+        const char* ship_network_xml = R"(
 <network>
-  <name>default</name>
-  <bridge name='virbr0' stp='on' delay='0'/>
-  <forward mode='nat'/>
-  <ip address='192.168.122.1' netmask='255.255.255.0'>
+  <name>ship</name>
+  <forward mode='nat'>
+    <nat>
+      <port start='1024' end='65535'/>
+    </nat>
+  </forward>
+  <bridge name='shipbr0' stp='on' delay='0'/>
+  <mac address='52:54:00:fe:dc:7a'/>
+  <ip address='192.168.200.1' netmask='255.255.255.0'>
     <dhcp>
-      <range start='192.168.122.2' end='192.168.122.254'/>
+      <range start='192.168.200.2' end='192.168.200.254'/>
     </dhcp>
   </ip>
 </network>
         )";
 
-        string default_network_xml_file = "/tmp/default-network.xml";
-        ofstream xml_file(default_network_xml_file);
-        xml_file << default_network_xml;
+        string ship_network_xml_file = "/tmp/ship-network.xml";
+        ofstream xml_file(ship_network_xml_file);
+        xml_file << ship_network_xml;
         xml_file.close();
 
-        system(("virsh net-define " + default_network_xml_file).c_str());
-        system("virsh net-start default");
-        system("virsh net-autostart default");
+        system(("virsh net-define " + ship_network_xml_file).c_str());
+        system("virsh net-start ship");
+        system("virsh net-autostart ship");
 
-        remove(default_network_xml_file.c_str());
+        remove(ship_network_xml_file.c_str());
     } 
 }
 
@@ -301,8 +306,9 @@ void append_polkit_rule() {
 
     const char* polkit_rule = R"(
 polkit.addRule(function(action, subject) {
-    if (action.id.indexOf('org.libvirt.unix.manage') == 0 &&
-        subject.isInGroup('libvirt')) {
+    if (action.id == "org.libvirt.unix.manage" ||
+        action.id == "org.libvirt.unix.monitor" ||
+        action.id == "org.libvirt.unix.network") {
         return polkit.Result.YES;
     }
 });
@@ -376,7 +382,7 @@ string generate_vm_xml() {
     <controller type='sata' index='0'/>
     <interface type='network'>
       <mac address=')" << generate_mac_address() << R"('/>
-      <source network='default'/>
+      <source network='ship'/>
       <model type='virtio'/>
     </interface>
     <input type='tablet' bus='usb'/>
