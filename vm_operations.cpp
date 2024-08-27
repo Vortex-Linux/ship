@@ -62,13 +62,13 @@ void run_startup_commands() {
 }
 
 void start_vm() {
-    string load_saved_cmd = "virsh snapshot-revert --current " + ship_env.name;
+    string load_saved_cmd = "virsh -c qemu:///system snapshot-revert --current " + ship_env.name;
     exec(load_saved_cmd.c_str());
 
     string state = get_vm_state(ship_env.name);
 
     if (state.find("running") == string::npos) {
-          string start_cmd = "virsh start " + ship_env.name;
+          string start_cmd = "virsh -c qemu:///system start " + ship_env.name;
           exec(start_cmd.c_str());
     }
 
@@ -77,7 +77,7 @@ void start_vm() {
     string create_tmux_session_cmd = "tmux new -d -s" + ship_env.name;
     system(create_tmux_session_cmd.c_str());
 
-    ship_env.command = "virsh console " + ship_env.name;
+    ship_env.command = "virsh -c qemu:///system console " + ship_env.name;
     system_command_vm();
 
     pass_password_to_tmux();
@@ -110,17 +110,17 @@ void view_vm() {
 }
 
 void pause_vm() {
-    string view_cmd = "virsh suspend " + ship_env.name; 
+    string view_cmd = "virsh -c qemu:///system suspend " + ship_env.name; 
     system(view_cmd.c_str());
 }
 
 void resume_vm() {
-    string view_cmd = "virsh resume " + ship_env.name; 
+    string view_cmd = "virsh -c qemu:///system resume " + ship_env.name; 
     system(view_cmd.c_str());
 }
 
 void delete_old_snapshots() {
-    string list_snapshot_cmd = "virsh snapshot-list --name " + ship_env.name;
+    string list_snapshot_cmd = "virsh -c qemu:///system snapshot-list --name " + ship_env.name;
     string snapshot_list = exec(list_snapshot_cmd.c_str());
     vector<string> snapshots = split_string_by_line(snapshot_list);
 
@@ -131,7 +131,7 @@ void delete_old_snapshots() {
     for (const auto& snapshot : snapshots) {
         if (snapshot != latest_snapshot) {
             cout << "Deleting old snapshot: " << snapshot << endl;
-            string delete_cmd = "virsh snapshot-delete " + ship_env.name + " " + snapshot;
+            string delete_cmd = "virsh -c qemu:///system snapshot-delete " + ship_env.name + " " + snapshot;
             system(delete_cmd.c_str());
         }
     }
@@ -140,17 +140,17 @@ void delete_old_snapshots() {
 }
 
 void save_vm() {
-    string save_cmd = "virsh snapshot-create --atomic " + ship_env.name; 
+    string save_cmd = "virsh -c qemu:///system snapshot-create --atomic " + ship_env.name; 
     system(save_cmd.c_str());
 
     delete_old_snapshots();
 }
 
 void shutdown_vm() {
-    string shutdown_cmd = "virsh shutdown " + ship_env.name; 
+    string shutdown_cmd = "virsh -c qemu:///system shutdown " + ship_env.name; 
     system(shutdown_cmd.c_str()); 
     
-    string shutdown_signal = "virsh event --event lifecycle --timeout 5 " + ship_env.name;
+    string shutdown_signal = "virsh -c qemu:///system event --event lifecycle --timeout 5 " + ship_env.name;
     bool timeout = system(shutdown_signal.c_str());
     if (timeout) {
         cout << "The VM isnt responding do you want to forcefully shutdown the vm ? (y/n): ";
@@ -163,7 +163,7 @@ void shutdown_vm() {
         }
 
         cout << "Forcefully shutting down " << ship_env.name << ".\n";
-        string shutdown_cmd = "virsh destroy " + ship_env.name + "\n";
+        string shutdown_cmd = "virsh -c qemu:///system destroy " + ship_env.name + "\n";
         system(shutdown_cmd.c_str());
     }
     cout << "Successfully shutdown " << ship_env.name; 
@@ -171,7 +171,7 @@ void shutdown_vm() {
 
 void clean_vm_resources() {
     cout << "Deleting all resources which are not needed anymore." << endl;;
-    ship_env.command = "virsh domblklist " + ship_env.name + " --details | awk '{print $4}' | tail -n +3 | head -n -1";
+    ship_env.command = "virsh -c qemu:///system domblklist " + ship_env.name + " --details | awk '{print $4}' | tail -n +3 | head -n -1";
     std::string image_paths = exec(ship_env.command.c_str());
 
     std::istringstream stream(image_paths);
@@ -193,13 +193,13 @@ void delete_vm() {
     string state = get_vm_state(ship_env.name);
     if (state.find("running") != string::npos || state.find("paused") != string::npos) {
         cout << "Forcefully shutting down VM " << ship_env.name << " before deletion.\n";
-        string shutdown_cmd = "virsh destroy " + ship_env.name;
+        string shutdown_cmd = "virsh -c qemu:///system destroy " + ship_env.name;
         system(shutdown_cmd.c_str());
     }
 
     clean_vm_resources();
 
-    string undefine_cmd = "virsh undefine --nvram " + ship_env.name;
+    string undefine_cmd = "virsh -c qemu:///system undefine --nvram " + ship_env.name;
     exec(undefine_cmd.c_str());
     cout << "VM " << ship_env.name << " deleted successfully.\n";
 
@@ -253,8 +253,6 @@ void create_vm() {
     set_cpu_limit();
 
     string xml_filename = generate_vm_xml();
-    append_polkit_rule();
-    create_ship_network_if_needed();
     define_vm(xml_filename);
 
     if (!custom_vm) {
@@ -263,71 +261,6 @@ void create_vm() {
         start_vm_with_confirmation_prompt();
     }
 
-}
-
-void create_ship_network_if_needed() {
-    string output = exec("virsh net-list --all");
-    if (output.find("ship") == string::npos) {
-        cout << "Ship network not found. Creating ship network...\n";
-
-        const char* ship_network_xml = R"(
-<network>
-  <name>ship</name>
-  <forward mode='nat'>
-    <nat>
-      <port start='1024' end='65535'/>
-    </nat>
-  </forward>
-  <bridge name='shipbr0' stp='on' delay='0'/>
-  <mac address='52:54:00:fe:dc:7a'/>
-  <ip address='192.168.200.1' netmask='255.255.255.0'>
-    <dhcp>
-      <range start='192.168.200.2' end='192.168.200.254'/>
-    </dhcp>
-  </ip>
-</network>
-        )";
-
-        string ship_network_xml_file = "/tmp/ship-network.xml";
-        ofstream xml_file(ship_network_xml_file);
-        xml_file << ship_network_xml;
-        xml_file.close();
-
-        system(("virsh net-define " + ship_network_xml_file).c_str());
-        system("virsh net-start ship");
-        system("virsh net-autostart ship");
-
-        remove(ship_network_xml_file.c_str());
-    } 
-}
-
-void append_polkit_rule() {
-    const char* polkit_rule_file = "/etc/polkit-1/rules.d/50-libvirt.rules";  
-
-    const char* polkit_rule = R"(
-polkit.addRule(function(action, subject) {
-    if (action.id == "org.libvirt.unix.manage" ||
-        action.id == "org.libvirt.unix.monitor" ||
-        action.id == "org.libvirt.unix.network") {
-        return polkit.Result.YES;
-    }
-});
-)";
-
-    ship_env.command = "sudo grep -q org.libvirt.unix.manage " + std::string(polkit_rule_file);
-
-    int result = system(ship_env.command.c_str());
-
-    if (result != 0) {
-        ship_env.command = "echo \"" + std::string(polkit_rule) + "\" | sudo tee -a " + std::string(polkit_rule_file);
-        system(ship_env.command.c_str());
-        std::cout << "Polkit rule for giving manage permissions to all users who are part of the libvirt group has been added to " << polkit_rule_file << std::endl;
-
-        std::cout << "Restarting polkit service to let it the rule take effect" << std::endl;
-
-        ship_env.command = "sudo systemctl restart polkit";
-        system(ship_env.command.c_str());
-    }
 }
 
 string generate_vm_xml() {
@@ -382,7 +315,7 @@ string generate_vm_xml() {
     <controller type='sata' index='0'/>
     <interface type='network'>
       <mac address=')" << generate_mac_address() << R"('/>
-      <source network='ship'/>
+      <source network='default'/>
       <model type='virtio'/>
     </interface>
     <input type='tablet' bus='usb'/>
@@ -466,7 +399,7 @@ string generate_vm_xml() {
 }
 
 void define_vm(const string& xml_filename) {
-    string define_cmd = "virsh define " + xml_filename;
+    string define_cmd = "virsh -c qemu:///system define " + xml_filename;
     exec(define_cmd.c_str());
 
     cout << "New VM configuration defined.\n";
@@ -691,7 +624,7 @@ void configure_vm() {
 
 void start_vm(const string& name) {
     cout << "Starting VM " << name << "...\n";
-    string start_cmd = "virsh start " + name;
+    string start_cmd = "virsh -c qemu:///system start " + name;
     exec(start_cmd.c_str());
 }
 
