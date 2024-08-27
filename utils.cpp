@@ -82,7 +82,7 @@ string exec(const char* cmd) {
 }
 
 string list_vm() {
-    string cmd = "virsh -c qemu:///system list --all";
+    string cmd = "virsh list --all";
     string result = exec(cmd.c_str());
     return result;
 }
@@ -94,7 +94,7 @@ string list_container() {
 }
 
 string get_vm_state(const string &vm_name) {
-    string cmd = "virsh -c qemu:///system domstate " + vm_name;
+    string cmd = "virsh domstate " + vm_name;
     return exec(cmd.c_str());
 }
 
@@ -130,7 +130,7 @@ int get_next_available_number_in_command_output(const string& command,const stri
 }
 
 int get_next_available_vm_number(){
-    string command = "virsh -c qemu:///system list --all | grep vm";
+    string command = "virsh list --all | grep vm";
     string prefix = "vm";
     int next_vm_number = get_next_available_number_in_command_output(command,prefix);
     return next_vm_number;
@@ -232,7 +232,7 @@ void send_file() {
         cout << exec(image_cleanup_cmd.c_str()) << endl;
 
     }else {
-        string get_vm_disk_image_cmd = "virsh -c qemu:///system domblklist " + ship_env.name + " --details | awk '/source file/ {print $3}' | grep '.qcow2$'";
+        string get_vm_disk_image_cmd = "virsh domblklist " + ship_env.name + " --details | awk '/source file/ {print $3}' | grep '.qcow2$'";
         string result = exec(get_vm_disk_image_cmd.c_str());
         string send_vm_cmd = "croc send " + get_absolute_path(result);
         cout << exec(send_vm_cmd.c_str()) << endl;
