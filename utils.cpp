@@ -1,79 +1,79 @@
 #include "ship.h"
 
 void show_help() {
-    cout << "./ship [OPTIONS] COMMAND [ARGS...]" << endl << endl;
-    cout << "Options:" << endl;
-    cout << "  --help                          Show this help message and exit" << endl;
-    cout << "  --virtual-machine or -vm        Specify action is for VM" << endl;
-    cout << "  --container or -ctr             Specify action is for container" << endl;
-    cout << "  --name NAME                     Specifies the name of the container or VM an action should be executed on" << endl << endl;
+    std::cout << "./ship [OPTIONS] COMMAND [ARGS...]" << std::endl << std::endl;
+    std::cout << "Options:" << std::endl;
+    std::cout << "  --help                          Show this help message and exit" << std::endl;
+    std::cout << "  --virtual-machine or -vm        Specify action is for VM" << std::endl;
+    std::cout << "  --container or -ctr             Specify action is for container" << std::endl;
+    std::cout << "  --name NAME                     Specifies the name of the container or VM an action should be executed on" << std::endl << std::endl;
 
-    cout << "Commands:" << endl;
-    cout << "  vm" << endl;
-    cout << "    create" << endl;
-    cout << "      --source URL                Set the source URL of the VM" << endl;
-    cout << "      --source-local PATH         Set the local source path of the VM" << endl;
-    cout << "      --cpus NUMBER               Set the CPU limit of the VM" << endl;
-    cout << "      --memory or -mem SIZE       Set the memory limit of the VM" << endl;
-    cout << "    start NAME                    Start the specified virtual machine" << endl;
-    cout << "    delete NAME                   Delete the specified virtual machine" << endl;
-    cout << "    list                          List all virtual machines" << endl;
-    cout << "    view or enter NAME            Shows a console interface or a full GUI of the virtual machine" << endl;
-    cout << "    pause NAME                    Pause the specified virtual machine" << endl;
-    cout << "    resume NAME                   Resume the specified virtual machine if it's paused" << endl;
-    cout << "    save NAME                     Take a snapshot of the specified virtual machine" << endl;
-    cout << "    shutdown NAME                 Shut down the specified virtual machine" << endl;
-    cout << "    exec NAME                     Execute the given command in the console of the specified virtual machine" << endl;
-    cout << "      --command COMMAND           Set the command to be executed" << endl;
-    cout << "    package_download or download_packages NAME" << endl;
-    cout << "                                  Download the specified package using the package manager of the specified virtual machine" << endl;
-    cout << "      --package PACKAGE           Set the package to be downloaded" << endl;
-    cout << "    package_remove or remove_packages NAME" << endl;
-    cout << "                                  Remove the specified package using the package manager of the specified virtual machine" << endl;
-    cout << "      --package PACKAGE           Set the package to be removed" << endl;
-    cout << "    package_search or search_packages NAME" << endl;
-    cout << "                                  Search for the specified package using the package manager of the specified virtual machine" << endl;
-    cout << "      --package PACKAGE           Set the package to be searched" << endl;
-    cout << "    send NAME                     Share the specified virtual machine to an end user (protected by a secret code)" << endl;
-    cout << "    receive                       Receive the virtual machine shared by an end user (protected by a secret code)" << endl << endl;
+    std::cout << "Commands:" << std::endl;
+    std::cout << "  vm" << std::endl;
+    std::cout << "    create" << std::endl;
+    std::cout << "      --source URL                Set the source URL of the VM" << std::endl;
+    std::cout << "      --source-local PATH         Set the local source path of the VM" << std::endl;
+    std::cout << "      --cpus NUMBER               Set the CPU limit of the VM" << std::endl;
+    std::cout << "      --memory or -mem SIZE       Set the memory limit of the VM" << std::endl;
+    std::cout << "    start NAME                    Start the specified virtual machine" << std::endl;
+  std::cout << "    delete NAME                   Delete the specified virtual machine" << std::endl;
+    std::cout << "    list                          List all virtual machines" << std::endl;
+    std::cout << "    view or enter NAME            Shows a console interface or a full GUI of the virtual machine" << std::endl;
+    std::cout << "    pause NAME                    Pause the specified virtual machine" << std::endl;
+    std::cout << "    resume NAME                   Resume the specified virtual machine if it's paused" << std::endl;
+    std::cout << "    save NAME                     Take a snapshot of the specified virtual machine" << std::endl;
+    std::cout << "    shutdown NAME                 Shut down the specified virtual machine" << std::endl;
+    std::cout << "    exec NAME                     Execute the given command in the console of the specified virtual machine" << std::endl;
+    std::cout << "      --command COMMAND           Set the command to be executed" << std::endl;
+    std::cout << "    package_download or download_packages NAME" << std::endl;
+    std::cout << "                                  Download the specified package using the package manager of the specified virtual machine" << std::endl;
+    std::cout << "      --package PACKAGE           Set the package to be downloaded" << std::endl;
+    std::cout << "    package_remove or remove_packages NAME" << std::endl;
+    std::cout << "                                  Remove the specified package using the package manager of the specified virtual machine" << std::endl;
+    std::cout << "      --package PACKAGE           Set the package to be removed" << std::endl;
+    std::cout << "    package_search or search_packages NAME" << std::endl;
+    std::cout << "                                  Search for the specified package using the package manager of the specified virtual machine" << std::endl;
+    std::cout << "      --package PACKAGE           Set the package to be searched" << std::endl;
+    std::cout << "    send NAME                     Share the specified virtual machine to an end user (protected by a secret code)" << std::endl;
+    std::cout << "    receive                       Receive the virtual machine shared by an end user (protected by a secret code)" << std::endl << std::endl;
 
-    cout << "  container" << endl;
-    cout << "    create NAME                   Create a new container with the specified name" << endl;
-    cout << "    delete NAME                   Delete the specified container" << endl;
-    cout << "    view or enter NAME            Show a console interface" << endl;
-    cout << "    upgrade NAME                  Upgrade the specified container" << endl;
-    cout << "    list                          List all containers" << endl;
-    cout << "    stop NAME                     Stop the specified container" << endl;
-    cout << "    exec NAME                     Execute the given command in the console of the specified container" << endl;
-    cout << "      --command COMMAND           Set the command to be executed" << endl;
-    cout << "    package_download or download_packages NAME" << endl;
-    cout << "                                  Download the specified package using the package manager of the specified container" << endl;
-    cout << "      --package PACKAGE           Set the package to be downloaded" << endl;
-    cout << "    package_remove or remove_packages NAME" << endl;
-    cout << "                                  Remove the specified package using the package manager of the specified container" << endl;
-    cout << "      --package PACKAGE           Set the package to be removed" << endl;
-    cout << "    package_search or search_packages NAME" << endl;
-    cout << "                                  Search for the specified package using the package manager of the specified container" << endl;
-    cout << "      --package PACKAGE           Set the package to be searched" << endl;
-    cout << "    send NAME                     Share the specified container to an end user (protected by a secret code)" << endl;
-    cout << "    receive                       Receive the container shared by an end user (protected by a secret code)" << endl;
+    std::cout << "  container" << std::endl;
+    std::cout << "    create NAME                   Create a new container with the specified name" << std::endl;
+    std::cout << "    delete NAME                   Delete the specified container" << std::endl;
+    std::cout << "    view or enter NAME            Show a console interface" << std::endl;
+    std::cout << "    upgrade NAME                  Upgrade the specified container" << std::endl;
+    std::cout << "    list                          List all containers" << std::endl;
+    std::cout << "    stop NAME                     Stop the specified container" << std::endl;
+    std::cout << "    exec NAME                     Execute the given command in the console of the specified container" << std::endl;
+    std::cout << "      --command COMMAND           Set the command to be executed" << std::endl;
+    std::cout << "    package_download or download_packages NAME" << std::endl;
+    std::cout << "                                  Download the specified package using the package manager of the specified container" << std::endl;
+    std::cout << "      --package PACKAGE           Set the package to be downloaded" << std::endl;
+    std::cout << "    package_remove or remove_packages NAME" << std::endl;
+    std::cout << "                                  Remove the specified package using the package manager of the specified container" << std::endl;
+    std::cout << "      --package PACKAGE           Set the package to be removed" << std::endl;
+    std::cout << "    package_search or search_packages NAME" << std::endl;
+    std::cout << "                                  Search for the specified package using the package manager of the specified container" << std::endl;
+    std::cout << "      --package PACKAGE           Set the package to be searched" << std::endl;
+    std::cout << "    send NAME                     Share the specified container to an end user (protected by a secret code)" << std::endl;
+    std::cout << "    receive                       Receive the container shared by an end user (protected by a secret code)" << std::endl;
 }
 
-string trim_trailing_whitespaces(const string& str) {
+std::string trim_trailing_whitespaces(const std::string& str) {
     size_t first = str.find_first_not_of(" \n\r\t");
-    if (first == string::npos) {
+    if (first == std::string::npos) {
         return ""; 
     }
     size_t last = str.find_last_not_of(" \n\r\t");
     return str.substr(first, (last - first + 1));
 }
 
-string exec(const char* cmd) {
-    array<char, 128> buffer;
-    string result;
-    unique_ptr<FILE, int (*)(FILE*)> pipe(popen(cmd, "r"), pclose);
+std::string exec(const char* cmd) {
+    std::array<char, 128> buffer;
+    std::string result;
+    std::unique_ptr<FILE, int (*)(FILE*)> pipe(popen(cmd, "r"), pclose);
     if (!pipe) {
-        throw runtime_error("popen() failed!");
+        throw std::runtime_error("popen() failed!");
     }
     while (fgets(buffer.data(), buffer.size(), pipe.get()) != nullptr) {
         result += buffer.data();
@@ -81,31 +81,31 @@ string exec(const char* cmd) {
     return result;
 }
 
-string list_vm() {
-    string cmd = "virsh list --all";
-    string result = exec(cmd.c_str());
+std::string list_vm() {
+    std::string cmd = "virsh list --all";
+    std::string result = exec(cmd.c_str());
     return result;
 }
 
-string list_container() {
-    string cmd = "distrobox list";
-    string result = exec(cmd.c_str());
+std::string list_container() {
+    std::string cmd = "distrobox list";
+    std::string result = exec(cmd.c_str());
     return result;
 }
 
-string get_vm_state(const string &vm_name) {
-    string cmd = "virsh domstate " + vm_name;
+std::string get_vm_state(const std::string &vm_name) {
+    std::string cmd = "virsh domstate " + vm_name;
     return exec(cmd.c_str());
 }
 
-vector<int> extract_numbers_with_prefix(const string& result,const string& prefix) {
-    vector<int> numbers;
-    istringstream stream(result);
-    string line;
+std::vector<int> extract_numbers_with_prefix(const std::string& result,const std::string& prefix) {
+    std::vector<int> numbers;
+    std::istringstream stream(result);
+    std::string line;
     while (getline(stream, line)) {
         size_t pos = line.find(prefix);
-        if (pos != string::npos) {
-            string num_str = line.substr(pos + 2);
+        if (pos != std::string::npos) {
+            std::string num_str = line.substr(pos + 2);
             try {
                 int num = stoi(num_str);
                 numbers.push_back(num);
@@ -117,9 +117,9 @@ vector<int> extract_numbers_with_prefix(const string& result,const string& prefi
     return numbers;
 }
 
-int get_next_available_number_in_command_output(const string& command,const string& prefix) {
-    string result = exec(command.c_str());
-    vector<int> numbers = extract_numbers_with_prefix(result,prefix);
+int get_next_available_number_in_command_output(const std::string& command,const std::string& prefix) {
+    std::string result = exec(command.c_str());
+    std::vector<int> numbers = extract_numbers_with_prefix(result,prefix);
 
     if (numbers.empty()) {
         return 1;     
@@ -130,26 +130,26 @@ int get_next_available_number_in_command_output(const string& command,const stri
 }
 
 int get_next_available_vm_number(){
-    string command = "virsh list --all | grep vm";
-    string prefix = "vm";
+    std::string command = "virsh list --all | grep vm";
+    std::string prefix = "vm";
     int next_vm_number = get_next_available_number_in_command_output(command,prefix);
     return next_vm_number;
 }
 
 int get_next_available_container_number(){
-    string command = "distrobox list | grep vm";
-    string prefix = "container";
+    std::string command = "distrobox list | grep vm";
+    std::string prefix = "container";
     int next_container_number = get_next_available_number_in_command_output(command,prefix);
     return next_container_number;
 }
 
     
-string get_absolute_path(const string &relative_path) {
+std::string get_absolute_path(const std::string &relative_path) {
     char abs_path[PATH_MAX];
     if (realpath(relative_path.c_str(), abs_path) != NULL) {
-        return string(abs_path);
+        return std::string(abs_path);
     } else {
-        cout << "The path " << relative_path << " not found";
+        std::cout << "The path " << relative_path << " not found";
         exit(0);
     }
 }
@@ -184,15 +184,15 @@ void exec_package_manager_operations() {
         }
 
     } else {
-        cout << "Package manager not found\n";
+        std::cout << "Package manager not found\n";
     }
 }
 
-string generate_mac_address() {
-    ostringstream mac;
-    random_device rd;
-    mt19937 gen(rd());
-    uniform_int_distribution<> dis(0x00, 0xFF);
+std::string generate_mac_address() {
+    std::ostringstream mac;
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_int_distribution<> dis(0x00, 0xFF);
 
     mac << std::hex << std::setfill('0');
     mac << "52:54:00"; 
@@ -203,11 +203,11 @@ string generate_mac_address() {
     return mac.str();
 }
 
-vector<string> split_string_by_line(const string& str) {
-    vector<string> tokens;
-    istringstream stream(str);
-    string token;
-    while (getline(stream, token)) {
+std::vector<std::string> split_string_by_line(const std::string& str) {
+    std::vector<std::string> tokens;
+    std::istringstream stream(str);
+    std::string token;
+    while (std::getline(stream, token)) {
         if (!token.empty()) {
             tokens.push_back(token);
         }
@@ -217,63 +217,63 @@ vector<string> split_string_by_line(const string& str) {
 
 void send_file() {
     if(ship_env.mode==ShipMode::CONTAINER) {
-        string image = "/tmp/" + ship_env.name;
+        std::string image = "/tmp/" + ship_env.name;
 
-        string make_container_image_cmd = "docker commit " + ship_env.name + " " + ship_env.name;
-        cout << exec(make_container_image_cmd.c_str()) << endl;
+        std::string make_container_image_cmd = "docker commit " + ship_env.name + " " + ship_env.name;
+        std::cout << exec(make_container_image_cmd.c_str()) << std::endl;
 
-        string make_container_tar_file_cmd = "docker save -o " + image + " " + ship_env.name;
-        cout << exec(make_container_tar_file_cmd.c_str()) << endl;
+        std::string make_container_tar_file_cmd = "docker save -o " + image + " " + ship_env.name;
+        std::cout << exec(make_container_tar_file_cmd.c_str()) << std::endl;
 
-        string send_container_image_cmd = "croc send " + image;
-        cout << exec(send_container_image_cmd.c_str()) << endl;
+        std::string send_container_image_cmd = "croc send " + image;
+        std::cout << exec(send_container_image_cmd.c_str()) << std::endl;
 
-        string image_cleanup_cmd = "docker rmi " + ship_env.name;
-        cout << exec(image_cleanup_cmd.c_str()) << endl;
+        std::string image_cleanup_cmd = "docker rmi " + ship_env.name;
+        std::cout << exec(image_cleanup_cmd.c_str()) << std::endl;
 
     }else {
-        string get_vm_disk_image_cmd = "virsh domblklist " + ship_env.name + " --details | awk '/source file/ {print $3}' | grep '.qcow2$'";
-        string result = exec(get_vm_disk_image_cmd.c_str());
-        string send_vm_cmd = "croc send " + get_absolute_path(result);
-        cout << exec(send_vm_cmd.c_str()) << endl;
+        std::string get_vm_disk_image_cmd = "virsh domblklist " + ship_env.name + " --details | awk '/source file/ {print $3}' | grep '.qcow2$'";
+        std::string result = exec(get_vm_disk_image_cmd.c_str());
+        std::string send_vm_cmd = "croc send " + get_absolute_path(result);
+        std::cout << exec(send_vm_cmd.c_str()) << std::endl;
     } 
 }
 
 void receive_file() {
-    string code;
-    cout << "Please type the secret code: ";
-    getline(cin, code);
+    std::string code;
+    std::cout << "Please type the secret code: ";
+    getline(std::cin, code);
 
     if(ship_env.mode==ShipMode::CONTAINER) {
-        string set_croc_secret_cmd = "export CROC_SECRET=" + code;
-        cout << exec(set_croc_secret_cmd.c_str()) << endl;
+        std::string set_croc_secret_cmd = "export CROC_SECRET=" + code;
+        std::cout << exec(set_croc_secret_cmd.c_str()) << std::endl;
 
-        string receive_container_cmd = "croc recv";
-        cout << exec(receive_container_cmd.c_str()) << endl;
+        std::string receive_container_cmd = "croc recv";
+        std::cout << exec(receive_container_cmd.c_str()) << std::endl;
 
-        string find_container_image_cmd = "ls -t | head -1";
-        string image = exec(find_container_image_cmd.c_str());
+        std::string find_container_image_cmd = "ls -t | head -1";
+        std::string image = exec(find_container_image_cmd.c_str());
 
-        string load_container_image_cmd = "docker load -i " + image;
-        cout << exec(load_container_image_cmd.c_str()) << endl;
+        std::string load_container_image_cmd = "docker load -i " + image;
+        std::cout << exec(load_container_image_cmd.c_str()) << std::endl;
 
-        string create_container_cmd = "distrobox create --name " + image + " --image " + image;
-        cout << exec(create_container_cmd.c_str()) << endl;
+        std::string create_container_cmd = "distrobox create --name " + image + " --image " + image;
+        std::cout << exec(create_container_cmd.c_str()) << std::endl;
 
     }else {
         ship_env.source_local = get_executable_dir() + "images/disk-images/";
 
-        string set_croc_secret_cmd = "export CROC_SECRET=" + code;
-        cout << exec(set_croc_secret_cmd.c_str()) << endl;
+        std::string set_croc_secret_cmd = "export CROC_SECRET=" + code;
+        std::cout << exec(set_croc_secret_cmd.c_str()) << std::endl;
 
-        string receive_vm_cmd = "croc recv -o " + ship_env.source_local;
-        cout << exec(receive_vm_cmd.c_str()) << endl;
+        std::string receive_vm_cmd = "croc recv -o " + ship_env.source_local;
+        std::cout << exec(receive_vm_cmd.c_str()) << std::endl;
 
-        string find_vm_image_cmd = "find /images/disk-images/  -type f -exec ls -t1 {} + | head -1";
-        string vm_image = exec(find_vm_image_cmd.c_str());
+        std::string find_vm_image_cmd = "find /images/disk-images/  -type f -exec ls -t1 {} + | head -1";
+        std::string vm_image = exec(find_vm_image_cmd.c_str());
 
         size_t extension_starting_position = ship_env.source_local.find(".");
-        string image_name = ship_env.source_local.substr(0, extension_starting_position);
+        std::string image_name = ship_env.source_local.substr(0, extension_starting_position);
 
         ship_env.name = image_name;
 
@@ -281,7 +281,7 @@ void receive_file() {
   }
 }
 
-string find_settings_file() {
+std::string find_settings_file() {
     if (ship_env.mode==ShipMode::CONTAINER){
         return get_executable_dir() + "settings/container-settings/" + ship_env.name + ".ini";
     }else {

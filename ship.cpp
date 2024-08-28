@@ -54,7 +54,7 @@ std::ostream& operator<<(std::ostream& os, const ShipAction& action) {
    }
 }
 
-unordered_map<string, PackageManagerCommands> package_managers = {
+std::unordered_map<std::string, PackageManagerCommands> package_managers = {
     {"ship", {"sudo ship", "sudo ship search", "sudo ship install", "sudo ship remove"}},
     {"apk", {"sudo apk", "sudo apk search", "sudo apk add", "sudo apk del"}},
     {"apt-get", {"sudo apt-get", "sudo apt-get search", "sudo apt-get install", "sudo apt-get remove"}},
@@ -395,10 +395,10 @@ void process_operands(int argc, char *argv[]) {
         }
 
         if (ship_env.action == ShipAction::UNKNOWN) {
-            cout << "Ship found unknown operand " << argv[i] << " for entity " << ship_env.mode << "\n";
-            cout << "For more information try ship --help\n";
+            std::cout << "Ship found unknown operand " << argv[i] << " for entity " << ship_env.mode << "\n";
+            std::cout << "For more information try ship --help\n";
         } else {
-            cout << "Ship found unknown operand " << argv[i] << " for action " << ship_env.action << "\n";
+            std::cout << "Ship found unknown operand " << argv[i] << " for action " << ship_env.action << "\n";
         }
 
         exit(1);
@@ -411,9 +411,9 @@ void exec_action() {
     } else if (ship_env.mode == ShipMode::CONTAINER) {
         exec_action_for_container();
     } else {
-        cout << "Are you using this action for vms " << ship_env.name << "? (y/n,Note:The default behaviour is that the action is assumed to be for containers): ";
-        string confirm;
-        getline(cin, confirm);
+        std::cout << "Are you using this action for vms " << ship_env.name << "? (y/n,Note:The default behaviour is that the action is assumed to be for containers): ";
+        std::string confirm;
+        getline(std::cin, confirm);
 
         if (confirm != "y" && confirm != "Y") {
             ship_env.mode = ShipMode::CONTAINER;
@@ -428,8 +428,8 @@ void exec_action() {
 
 int main(int argc, char *argv[]) {
     if (argc < 2) {
-        cout << "ship: missing operand\n";
-        cout << "For more information try ship --help\n";
+        std::cout << "ship: missing operand\n";
+        std::cout << "For more information try ship --help\n";
         return 1;
     }
     process_operands(argc, argv);

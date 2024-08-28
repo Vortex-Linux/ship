@@ -1,14 +1,14 @@
 #include "ship.h"
 
 void pass_password_to_tmux() {
-    string capture_tmux_last_line_cmd = "tmux capture-pane -p -S -1 -t " + ship_env.name + " | tail -n 1";
+    std::string capture_tmux_last_line_cmd = "tmux capture-pane -p -S -1 -t " + ship_env.name + " | tail -n 1";
 
     sleep(1);
 
-    while (exec((capture_tmux_last_line_cmd.c_str())).find("password for") != string::npos) {
-        cout << "Please provide your root password: ";     
-        string root_password;     
-        getline(cin, root_password); 
+    while (exec((capture_tmux_last_line_cmd.c_str())).find("password for") != std::string::npos) {
+        std::cout << "Please provide your root password: ";     
+        std::string root_password;     
+        std::getline(std::cin, root_password); 
  
         ship_env.command = root_password;
         system_command_vm();
@@ -19,8 +19,8 @@ void pass_password_to_tmux() {
 
 void wait_for_vm_ready() {
     while(true) {
-        string capture_tmux_last_line_cmd = "tmux capture-pane -p -S -1 -t " + ship_env.name + " | tail -n 1";
-        string output = exec(capture_tmux_last_line_cmd.c_str());
+        std::string capture_tmux_last_line_cmd = "tmux capture-pane -p -S -1 -t " + ship_env.name + " | tail -n 1";
+        std::string output = exec(capture_tmux_last_line_cmd.c_str());
 
         output = trim_trailing_whitespaces(output);
 
@@ -62,19 +62,19 @@ void run_startup_commands() {
 }
 
 void start_vm() {
-    string load_saved_cmd = "virsh snapshot-revert --current " + ship_env.name;
+    std::string load_saved_cmd = "virsh snapshot-revert --current " + ship_env.name;
     exec(load_saved_cmd.c_str());
 
-    string state = get_vm_state(ship_env.name);
+    std::string state = get_vm_state(ship_env.name);
 
-    if (state.find("running") == string::npos) {
-          string start_cmd = "virsh start " + ship_env.name;
+    if (state.find("running") == std::string::npos) {
+          std::string start_cmd = "virsh start " + ship_env.name;
           exec(start_cmd.c_str());
     }
 
-    cout << "VM " << ship_env.name << " started successfully.\n";
+    std::cout << "VM " << ship_env.name << " started successfully.\n";
 
-    string create_tmux_session_cmd = "tmux new -d -s" + ship_env.name;
+    std::string create_tmux_session_cmd = "tmux new -d -s" + ship_env.name;
     system(create_tmux_session_cmd.c_str());
 
     ship_env.command = "virsh console " + ship_env.name;
@@ -88,19 +88,19 @@ void start_vm() {
 }
 
 void view_vm_console() {
-    string view_cmd = "tmux attach-session -t " + ship_env.name;      
+    std::string view_cmd = "tmux attach-session -t " + ship_env.name;      
     system(view_cmd.c_str());
 }
 
 void view_vm_gui() {
-    string view_cmd = "virt-viewer " + ship_env.name; 
+    std::string view_cmd = "virt-viewer " + ship_env.name; 
     system(view_cmd.c_str());
 }
 
 void view_vm() {
-    cout << "Do you want a full GUI of the VM(By default the view action will show only a terminal of the VM) ? (y/n): ";     
-    string confirm;     
-    getline(cin, confirm); 
+    std::cout << "Do you want a full GUI of the VM(By default the view action will show only a terminal of the VM) ? (y/n): ";     
+    std::string confirm;     
+    std::getline(std::cin, confirm); 
 
     if (confirm != "y" && confirm != "Y") {
         view_vm_console();
@@ -110,75 +110,75 @@ void view_vm() {
 }
 
 void pause_vm() {
-    string view_cmd = "virsh suspend " + ship_env.name; 
+    std::string view_cmd = "virsh suspend " + ship_env.name; 
     system(view_cmd.c_str());
 }
 
 void resume_vm() {
-    string view_cmd = "virsh resume " + ship_env.name; 
+    std::string view_cmd = "virsh resume " + ship_env.name; 
     system(view_cmd.c_str());
 }
 
 void delete_old_snapshots() {
-    string list_snapshot_cmd = "virsh snapshot-list --name " + ship_env.name;
-    string snapshot_list = exec(list_snapshot_cmd.c_str());
-    vector<string> snapshots = split_string_by_line(snapshot_list);
+    std::string list_snapshot_cmd = "virsh snapshot-list --name " + ship_env.name;
+    std::string snapshot_list = exec(list_snapshot_cmd.c_str());
+    std::vector<std::string> snapshots = split_string_by_line(snapshot_list);
 
-    reverse(snapshots.begin(), snapshots.end());
+    std::reverse(snapshots.begin(), snapshots.end());
 
-    string latest_snapshot = snapshots.front();
+    std::string latest_snapshot = snapshots.front();
 
     for (const auto& snapshot : snapshots) {
         if (snapshot != latest_snapshot) {
-            cout << "Deleting old snapshot: " << snapshot << endl;
-            string delete_cmd = "virsh snapshot-delete " + ship_env.name + " " + snapshot;
+            std::cout << "Deleting old snapshot: " << snapshot << std::endl;
+            std::string delete_cmd = "virsh snapshot-delete " + ship_env.name + " " + snapshot;
             system(delete_cmd.c_str());
         }
     }
 
-    cout << "Kept latest snapshot: " << latest_snapshot << endl;
+    std::cout << "Kept latest snapshot: " << latest_snapshot << std::endl;
 }
 
 void save_vm() {
-    string save_cmd = "virsh snapshot-create --atomic " + ship_env.name; 
+    std::string save_cmd = "virsh snapshot-create --atomic " + ship_env.name; 
     system(save_cmd.c_str());
 
     delete_old_snapshots();
 }
 
 void shutdown_vm() {
-    string shutdown_cmd = "virsh shutdown " + ship_env.name; 
+    std::string shutdown_cmd = "virsh shutdown " + ship_env.name; 
     system(shutdown_cmd.c_str()); 
     
-    string shutdown_signal = "virsh --event lifecycle --timeout 5 " + ship_env.name;
+    std::string shutdown_signal = "virsh --event lifecycle --timeout 5 " + ship_env.name;
     bool timeout = system(shutdown_signal.c_str());
     if (timeout) {
-        cout << "The VM isnt responding do you want to forcefully shutdown the vm ? (y/n): ";
-        string confirm;
-        getline(cin, confirm);
+        std::cout << "The VM isnt responding do you want to forcefully shutdown the vm ? (y/n): ";
+        std::string confirm;
+        std::getline(std::cin, confirm);
 
         if (confirm != "y" && confirm != "Y") {
-            cout << "VM force shutdown proccess cancelled for " << ship_env.name << "'.\n";
+            std::cout << "VM force shutdown proccess cancelled for " << ship_env.name << "'.\n";
             return;
         }
 
-        cout << "Forcefully shutting down " << ship_env.name << ".\n";
-        string shutdown_cmd = "virsh destroy " + ship_env.name + "\n";
+        std::cout << "Forcefully shutting down " << ship_env.name << ".\n";
+        std::string shutdown_cmd = "virsh destroy " + ship_env.name + "\n";
         system(shutdown_cmd.c_str());
     }
-    cout << "Successfully shutdown " << ship_env.name; 
+    std::cout << "Successfully shutdown " << ship_env.name; 
 }
 
 void clean_vm_resources() {
-    cout << "Deleting all resources which are not needed anymore." << endl;;
+    std::cout << "Deleting all resources which are not needed anymore." << std::endl;;
     ship_env.command = "virsh domblklist " + ship_env.name + " --details | awk '{print $4}' | tail -n +3 | head -n -1";
     std::string image_paths = exec(ship_env.command.c_str());
 
-    std::istringstream stream(image_paths);
+    std::stringstream stream(image_paths);
     std::string image_path;
 
     while (std::getline(stream, image_path)) {
-        std::cout << "Deleting " << image_path << endl;
+        std::cout << "Deleting " << image_path << std::endl;
         ship_env.command = "rm " + image_path;
         system(ship_env.command.c_str());
     }
@@ -186,22 +186,22 @@ void clean_vm_resources() {
     ship_env.command = "rm " + get_executable_dir() + "settings/vm-settings/" + ship_env.name + ".ini";
     system(ship_env.command.c_str());
 
-    cout << "Successfully deleted all resources which are not needed anymore." << endl;;
+    std::cout << "Successfully deleted all resources which are not needed anymore." << std::endl;;
 }
 
 void delete_vm() {
-    string state = get_vm_state(ship_env.name);
-    if (state.find("running") != string::npos || state.find("paused") != string::npos) {
-        cout << "Forcefully shutting down VM " << ship_env.name << " before deletion.\n";
-        string shutdown_cmd = "virsh destroy " + ship_env.name;
+    std::string state = get_vm_state(ship_env.name);
+    if (state.find("running") != std::string::npos || state.find("paused") != std::string::npos) {
+        std::cout << "Forcefully shutting down VM " << ship_env.name << " before deletion.\n";
+        std::string shutdown_cmd = "virsh destroy " + ship_env.name;
         system(shutdown_cmd.c_str());
     }
 
     clean_vm_resources();
 
-    string undefine_cmd = "virsh undefine --nvram " + ship_env.name;
+    std::string undefine_cmd = "virsh undefine --nvram " + ship_env.name;
     exec(undefine_cmd.c_str());
-    cout << "VM " << ship_env.name << " deleted successfully.\n";
+    std::cout << "VM " << ship_env.name << " deleted successfully.\n";
 
 }
 
@@ -213,12 +213,12 @@ void create_vm() {
         generate_vm_name();
     }
 
-    cout << "Creating new virtual machine for ship with name " + ship_env.name + "\n";
+    std::cout << "Creating new virtual machine for ship with name " + ship_env.name + "\n";
 
     if (ship_env.action == ShipAction::RECEIVE) {
-        cout << "Please specify the name of this VM(leaving this blank will set the name to the name given by the sender which is " << ship_env.name << ")";
-        string name_given;
-        getline(cin, name_given);
+      std::cout << "Please specify the name of this VM(leaving this blank will set the name to the name given by the sender which is " << ship_env.name << ")";
+        std::string name_given;
+        std::getline(std::cin, name_given);
         if(!name_given.empty()) {
             ship_env.name = name_given; 
         }
@@ -230,7 +230,7 @@ void create_vm() {
     }
 
     if (ship_env.source_local.empty() && ship_env.source.empty()) {
-        cout << "Ship failed to create a VM because no valid source was specified.\n";
+        std::cout << "Ship failed to create a VM because no valid source was specified.\n";
         exit(0);
     }
 
@@ -238,8 +238,8 @@ void create_vm() {
 
     ship_env.source_local = trim_trailing_whitespaces(ship_env.source_local);
 
-    if (ship_env.source_local.find_last_of(".") != string::npos) {
-        string extension = ship_env.source_local.substr(ship_env.source_local.find_last_of("."));
+    if (ship_env.source_local.find_last_of(".") != std::string::npos) {
+        std::string extension = ship_env.source_local.substr(ship_env.source_local.find_last_of("."));
 
         if (extension == ".iso") {
             ship_env.iso_path = get_absolute_path(ship_env.source_local);
@@ -252,7 +252,7 @@ void create_vm() {
     set_memory_limit();
     set_cpu_limit();
 
-    string xml_filename = generate_vm_xml();
+    std::string xml_filename = generate_vm_xml();
     define_vm(xml_filename);
 
     if (!custom_vm) {
@@ -263,8 +263,8 @@ void create_vm() {
 
 }
 
-string generate_vm_xml() {
-    ostringstream vm_xml;
+std::string generate_vm_xml() {
+    std::stringstream vm_xml;
     vm_xml << R"(
 <domain type='kvm'>
   <name>)" << ship_env.name << R"(</name>
@@ -387,8 +387,8 @@ string generate_vm_xml() {
     )";
 
 
-    string xml_filename = "/tmp/" + ship_env.name + ".xml";
-    ofstream xml_file(xml_filename);
+    std::string xml_filename = "/tmp/" + ship_env.name + ".xml";
+    std::ofstream xml_file(xml_filename);
     xml_file << vm_xml.str();
     xml_file.close();
 
@@ -398,22 +398,22 @@ string generate_vm_xml() {
     return xml_filename;
 }
 
-void define_vm(const string& xml_filename) {
-    string define_cmd = "virsh define " + xml_filename;
+void define_vm(const std::string& xml_filename) {
+    std::string define_cmd = "virsh define " + xml_filename;
     exec(define_cmd.c_str());
 
-    cout << "New VM configuration defined.\n";
+    std::cout << "New VM configuration defined.\n";
 }
 
 void start_vm_with_confirmation_prompt() {
-    cout << "Do you want to start the VM " << ship_env.name << " right now? (y/n): ";
-    string confirm;
-    getline(cin, confirm);
+    std::cout << "Do you want to start the VM " << ship_env.name << " right now? (y/n): ";
+    std::string confirm;
+    std::getline(std::cin, confirm);
 
     if (confirm == "y" || confirm == "Y") {
-        cout << "Starting VM " << ship_env.name << "...\n";
+        std::cout << "Starting VM " << ship_env.name << "...\n";
     } else {
-        cout << "VM has not been started. You can start it later with 'ship start " << ship_env.name << "'.\n";
+      std::cout << "VM has not been started. You can start it later with 'ship start " << ship_env.name << "'.\n";
         return;
     }
     start_vm();
@@ -421,53 +421,53 @@ void start_vm_with_confirmation_prompt() {
 
 void get_iso_source() {
     if(!ship_env.source.empty()) {
-        cout << "Downloading iso to images" << "\n";
-        string download_cmd = "aria2c --dir " + get_executable_dir() + "images/iso-images " + ship_env.source;
+        std::cout << "Downloading iso to images" << "\n";
+        std::string download_cmd = "aria2c --dir " + get_executable_dir() + "images/iso-images " + ship_env.source;
         system(download_cmd.c_str());
-        cout << "Finding the path to the downloaded iso image" << "\n";
-        string find_latest_image_cmd = "find images/iso-images  -type f -exec ls -t1 {} + | head -1";
+        std::cout << "Finding the path to the downloaded iso image" << "\n";
+        std::string find_latest_image_cmd = "find images/iso-images  -type f -exec ls -t1 {} + | head -1";
         ship_env.source_local = exec(find_latest_image_cmd.c_str());
-        cout << "Found the path as " << ship_env.source_local << "\n";
+        std::cout << "Found the path as " << ship_env.source_local << "\n";
     }
 }
 
 void get_tested_vm() {
     while (true) {
-        cout << "Please specify a vm from our tested and configured vms(use help to get the list of the available configured vms): ";
-        getline(cin, ship_env.source);
+        std::cout << "Please specify a vm from our tested and configured vms(use help to get the list of the available configured vms): ";
+        std::getline(std::cin, ship_env.source);
         if (ship_env.source == "help") {
-            cout << "The available tested and configured vms are: " << endl;
-            cout << "tails" << endl;
-            cout << "whonix" << endl;
-            cout << "debian" << endl;
-            cout << "ubuntu" << endl;
-            cout << "arch" << endl;
-            cout << "gentoo" << endl;
-            cout << "fedora" << endl;
-            cout << "centos" << endl;
-            cout << "nix" << endl;
-            cout << "alpine" << endl;
-            cout << "Void" << endl;
-            cout << "freebsd" << endl;
-            cout << "openbsd" << endl;
-            cout << "netbsd" << endl;
-            cout << "dragonflybsd" << endl;
-            cout << "windows" << endl;
-            cout << "osx" << endl;
+            std::cout << "The available tested and configured vms are: " << std::endl;
+            std::cout << "tails" << std::endl;
+            std::cout << "whonix" << std::endl;
+            std::cout << "debian" << std::endl;
+            std::cout << "ubuntu" << std::endl;
+            std::cout << "arch" << std::endl;
+            std::cout << "gentoo" << std::endl;
+            std::cout << "fedora" << std::endl;
+            std::cout << "centos" << std::endl;
+            std::cout << "nix" << std::endl;
+            std::cout << "alpine" << std::endl;
+            std::cout << "Void" << std::endl;
+            std::cout << "freebsd" << std::endl;
+            std::cout << "openbsd" << std::endl;
+            std::cout << "netbsd" << std::endl;
+            std::cout << "dragonflybsd" << std::endl;
+            std::cout << "windows" << std::endl;
+            std::cout << "osx" << std::endl;
         }else {
             if (strcmp(ship_env.source.c_str(), "tails") == 0) {
                 ship_env.os = TestedVM::tails; 
 
-                string find_image_folder_link_cmd = "lynx -dump -listonly -nonumbers https://mirrors.edge.kernel.org/tails/stable/ | grep https://mirrors.edge.kernel.org/tails/stable/tails-amd64";
+                std::string find_image_folder_link_cmd = "lynx -dump -listonly -nonumbers https://mirrors.edge.kernel.org/tails/stable/ | grep https://mirrors.edge.kernel.org/tails/stable/tails-amd64";
                 ship_env.source = trim_trailing_whitespaces(exec(find_image_folder_link_cmd.c_str()));
 
-                string find_image_file_link_cmd = "lynx -dump -listonly -nonumbers " + ship_env.source + " | grep -E 'iso$' | grep -v '\\.sig$'";
+                std::string find_image_file_link_cmd = "lynx -dump -listonly -nonumbers " + ship_env.source + " | grep -E 'iso$' | grep -v '\\.sig$'";
                 ship_env.source = exec(find_image_file_link_cmd.c_str());
 
             }else if (strcmp(ship_env.source.c_str(), "whonix") == 0) {
                 ship_env.os = TestedVM::whonix; 
 
-                string find_image_file_link_cmd = "lynx -dump -listonly -nonumbers https://www.whonix.org/wiki/KVM | grep -E '.qcow2$'";
+                std::string find_image_file_link_cmd = "lynx -dump -listonly -nonumbers https://www.whonix.org/wiki/KVM | grep -E '.qcow2$'";
                 ship_env.source = exec(find_image_file_link_cmd.c_str());
 
             }else if (strcmp(ship_env.source.c_str(), "debian") == 0) {
@@ -516,7 +516,7 @@ void get_tested_vm() {
                 ship_env.os = TestedVM::osx; 
                 ship_env.source = "";
             }else {
-                cout << "The specified vm is not available as a tested and configured vm" << endl;
+                std::cout << "The specified vm is not available as a tested and configured vm" << std::endl;
                 continue;
             }
             break;
@@ -526,10 +526,10 @@ void get_tested_vm() {
 
 void create_disk_image() {
     ship_env.disk_image_path = get_executable_dir() + "images/disk-images/" + ship_env.name + ".qcow2";
-    ifstream check_file(ship_env.disk_image_path);
+    std::ifstream check_file(ship_env.disk_image_path);
     if (!check_file.good()) {
-        cout << "Creating disk image at: " << ship_env.disk_image_path << endl;
-        string create_disk_cmd = "qemu-img create -f qcow2 " + ship_env.disk_image_path + " 1G";
+        std::cout << "Creating disk image at: " << ship_env.disk_image_path << std::endl;
+        std::string create_disk_cmd = "qemu-img create -f qcow2 " + ship_env.disk_image_path + " 1G";
         system(create_disk_cmd.c_str());
     }
     check_file.close();
@@ -537,32 +537,32 @@ void create_disk_image() {
 
 void generate_vm_name() {
     int next_vm_number = get_next_available_vm_number();
-    ship_env.name = "vm" + to_string(next_vm_number);
+    ship_env.name = "vm" + std::to_string(next_vm_number);
 }
 
 void set_memory_limit() {
     if (ship_env.memory_limit.empty()) {
         int max_memory = stoi(exec("free -m | awk '/^Mem:/{print $2}'"));
-        ship_env.memory_limit = to_string(max_memory);
+        ship_env.memory_limit = std::to_string(max_memory);
     }
 }
 
 void set_cpu_limit() {
     if (ship_env.cpu_limit.empty()) {
         int max_cpus = stoi(exec("nproc"));
-        ship_env.cpu_limit = to_string(max_cpus);
+        ship_env.cpu_limit = std::to_string(max_cpus);
     }
 }
 
 void configure_vm() {
-    cout << "Do you want do intial configuration for the proper working of  " << ship_env.name << " (y/n): ";
-    string confirm;
-    getline(cin, confirm);
+    std::cout << "Do you want do intial configuration for the proper working of  " << ship_env.name << " (y/n): ";
+    std::string confirm;
+    std::getline(std::cin, confirm);
 
     if (confirm == "y" || confirm == "Y") {
-        cout << "Starting VM " << ship_env.name << "...\n";
+        std::cout << "Starting VM " << ship_env.name << "...\n";
     } else {
-        cout << "VM has not been configured as indented but the vm has been made correctly and can be configured by yourself" << "'.\n";
+        std::cout << "VM has not been configured as indented but the vm has been made correctly and can be configured by yourself" << "'.\n";
         return;
     }
     start_vm();
@@ -622,45 +622,45 @@ void configure_vm() {
     }
 }
 
-void start_vm(const string& name) {
-    cout << "Starting VM " << name << "...\n";
-    string start_cmd = "virsh start " + name;
+void start_vm(const std::string& name) {
+    std::cout << "Starting VM " << name << "...\n";
+    std::string start_cmd = "virsh start " + name;
     exec(start_cmd.c_str());
 }
 
 void system_command_vm() {
-    string run_cmd = "tmux send-keys -t " + ship_env.name + " '" + ship_env.command + "' C-m";
+    std::string run_cmd = "tmux send-keys -t " + ship_env.name + " '" + ship_env.command + "' C-m";
     system(run_cmd.c_str());
 }
 
 bool exec_command_vm() {
-    string start_marker = "MARKER_" + to_string(rand());
-    string start_marker_cmd = "tmux send-keys -t " + ship_env.name + " '" + start_marker + "' C-m";
+    std::string start_marker = "MARKER_" + std::to_string(rand());
+    std::string start_marker_cmd = "tmux send-keys -t " + ship_env.name + " '" + start_marker + "' C-m";
     system(start_marker_cmd.c_str());
 
     system_command_vm();
 
-    string end_marker = "MARKER_" + to_string(rand());
-    string end_marker_cmd = "tmux send-keys -t " + ship_env.name + " 'echo " + end_marker + "' C-m";
+    std::string end_marker = "MARKER_" + std::to_string(rand());
+    std::string end_marker_cmd = "tmux send-keys -t " + ship_env.name + " 'echo " + end_marker + "' C-m";
     system(end_marker_cmd.c_str());
 
-    string capture_cmd = "tmux capture-pane -t " + ship_env.name + " -pS - | tail -n 2 | head -n 1";
+    std::string capture_cmd = "tmux capture-pane -t " + ship_env.name + " -pS - | tail -n 2 | head -n 1";
 
     while (true) {
-        string output = exec(capture_cmd.c_str());
-        if (output.find(end_marker) != string::npos) {
+        std::string output = exec(capture_cmd.c_str());
+        if (output.find(end_marker) != std::string::npos) {
             break;
         }
     }
 
-    capture_cmd = "tmux capture-pane -t " + ship_env.name + " -pS - | tac | grep -m1 -B " + to_string(INT_MAX) + " " + start_marker + " | tac | tail -n +3 | sed '/^\\s*$/d' | head -n -3";
-    string output = exec(capture_cmd.c_str());
+    capture_cmd = "tmux capture-pane -t " + ship_env.name + " -pS - | tac | grep -m1 -B " + std::to_string(INT_MAX) + " " + start_marker + " | tac | tail -n +3 | sed '/^\\s*$/d' | head -n -3";
+    std::string output = exec(capture_cmd.c_str());
 
     if (ship_env.action == ShipAction::EXEC) {
-        cout << output;
+        std::cout << output;
     }
 
-    if (ship_env.action != ShipAction::EXEC && output.find_first_not_of(' ') != string::npos) {
+    if (ship_env.action != ShipAction::EXEC && output.find_first_not_of(' ') != std::string::npos) {
         return true;
     }
 
@@ -674,12 +674,12 @@ bool check_vm_command_exists() {
 } 
 
 void find_vm_package_manager() {
-    string parameters = ship_env.command;
+    std::string parameters = ship_env.command;
     for (const auto& package_manager : package_managers) {
         ship_env.command = package_manager.first;
         if (check_vm_command_exists()) {
             ship_env.package_manager_name = package_manager.first;             
-            cout << "Package manager found as " << ship_env.package_manager_name << " for container " << ship_env.name << "\n";
+            std::cout << "Package manager found as " << ship_env.package_manager_name << " for container " << ship_env.name << "\n";
             ship_env.command = parameters;
             return;
         }
@@ -705,7 +705,7 @@ void exec_action_for_vm() {
             view_vm();
             break;
         case ShipAction::LIST:
-            cout << list_vm();
+            std::cout << list_vm();
             break;
         case ShipAction::PAUSE:
             pause_vm();
@@ -734,7 +734,7 @@ void exec_action_for_vm() {
             send_file();
             break;
         default: 
-            cout << "Invalid action for VM.\n";
+            std::cout << "Invalid action for VM.\n";
             break;
     }
 }
