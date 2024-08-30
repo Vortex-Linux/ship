@@ -283,7 +283,7 @@ void process_operands(int argc, char *argv[]) {
             continue;
         }
 
-        if (strcmp(argv[i], "shutdown") == 0 && ship_env.action == ShipAction::UNKNOWN && ship_env.mode==ShipMode::VM) {
+        if (strcmp(argv[i], "shutdown") == 0 && ship_env.action == ShipAction::UNKNOWN) {
             ship_env.action = ShipAction::SHUTDOWN;
             action_index = i;
             continue;

@@ -6,10 +6,15 @@
 
 ### Note:(Ship is the superutility of Vortex Linux but can still be used with other distros. If you are using Vortex Linux, Ship is available by default, and you don't have to download it.)
 
+### Important Prerequisites
+
+- Ensure that virtualization is enabled in the BIOS.
+- The kernel must have the "kvm" module enabled for virtualization to function properly.
+
 ### Debian based distros
 ```
 git clone https://github.com/Vortex-Linux/ship.git
-sudo apt install qemu-kvm libvirt-daemon-system virt-viewer libboost-all-dev lynx cloud-init
+sudo apt install qemu-kvm libvirt-daemon-system virt-viewer libboost-all-dev lynx aria2 tmux
 curl https://raw.githubusercontent.com/89luca89/distrobox/main/install | sudo sh
 wget https://github.com/schollz/croc/releases/download/v9.4.2/croc_9.4.2_Linux-64bit.deb
 sudo dpkg -i croc-*.deb
@@ -23,7 +28,7 @@ sudo systemctl enable --now cloud-final.service
 ```
 git clone https://github.com/Vortex-Linux/ship.git
 curl https://raw.githubusercontent.com/89luca89/distrobox/main/install | sudo sh
-sudo dnf install qemu croc @virtualization boost-devel lynx cloud-init
+sudo dnf install qemu croc @virtualization boost-devel lynx aria2 tmux
 sudo usermod -a -G libvirt $user
 sudo systemctl enable --now cloud-init-local.service
 sudo systemctl enable --now cloud-init.service
@@ -34,7 +39,7 @@ sudo systemctl enable --now cloud-final.service
 ### Arch based distros
 ```
 git clone https://github.com/Vortex-Linux/ship.git
-sudo pacman -S libvirt qemu-base distrobox docker croc virt-viewer boost lynx cloud-init
+sudo pacman -S libvirt qemu-base distrobox docker croc virt-viewer boost lynx aria2 tmux
 sudo usermod -a -G libvirt $user
 sudo systemctl enable --now cloud-init-local.service
 sudo systemctl enable --now cloud-init.service
@@ -46,7 +51,6 @@ sudo systemctl enable --now cloud-final.service
 
 You need the `kvm` kernel module for virtualization to work.
 Choose either `kvm-intel` or `kvm-amd` depending on your CPU.
-Make sure you have virtualization enabled in your BIOS!
 ```
 boot.kernelModules = [ ... "kvm-intel" ... ];
 ```
