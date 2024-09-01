@@ -213,9 +213,7 @@ void create_vm() {
         generate_vm_name();
     }
 
-    std::cout << "Creating new virtual machine for ship with name " + ship_env.name + "\n";
-
-    if (ship_env.action == ShipAction::RECEIVE) {
+    if (ship_env.name.empty()) {
       std::cout << "Please specify the name of this VM(leaving this blank will set the name to the name given by the sender which is " << ship_env.name << ")";
         std::string name_given;
         std::getline(std::cin, name_given);
@@ -223,6 +221,8 @@ void create_vm() {
             ship_env.name = name_given; 
         }
     }
+
+    std::cout << "Creating new virtual machine for ship with name " + ship_env.name + "\n";
 
     if (ship_env.source.empty() && ship_env.source_local.empty()) {
         custom_vm = false;

@@ -275,8 +275,14 @@ void receive_file() {
         size_t extension_starting_position = ship_env.source_local.find(".");
         std::string image_name = ship_env.source_local.substr(0, extension_starting_position);
 
-        ship_env.name = image_name;
-
+        std::cout << "Please specify the name of this VM(leaving this blank will set the name to the name given by the sender which is " << image_name << ")";
+        std::string name_given;
+        std::getline(std::cin, name_given);
+        if(!name_given.empty()) {
+            ship_env.name = name_given; 
+        }else {
+            ship_env.name = image_name;
+        }
         create_vm();
   }
 }

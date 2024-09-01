@@ -156,6 +156,7 @@ void start_container();
 std::string list_container();
 void delete_container();
 void create_container();
+void get_tested_container();
 void stop_container();
 void upgrade_container();
 void view_container();
