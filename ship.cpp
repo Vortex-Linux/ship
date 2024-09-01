@@ -139,6 +139,7 @@ void process_operands(int argc, char *argv[]) {
     bool fetching_packages = false;
     bool fetching_source = false;
     bool fetching_local_source = false;
+    bool fetching_image = false;
     bool fetching_cpu_limit = false;
     bool fetching_memory_limit = false;
     int action_index = INT_MAX;
@@ -189,6 +190,12 @@ void process_operands(int argc, char *argv[]) {
             continue;
         }
 
+        if (fetching_image) {
+            ship_env.image = argv[i];
+            fetching_image = false;
+            continue;
+        }
+
         if (fetching_cpu_limit) {
             ship_env.cpu_limit = argv[i];
             fetching_cpu_limit = false;
@@ -234,6 +241,11 @@ void process_operands(int argc, char *argv[]) {
 
         if (strcmp(argv[i], "--source-local") == 0 && ship_env.action==ShipAction::CREATE) {
             fetching_local_source = true;
+            continue;
+        }
+
+        if (strcmp(argv[i], "--image") == 0) {
+            fetching_image = true;
             continue;
         }
 
