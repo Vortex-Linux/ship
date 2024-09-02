@@ -76,15 +76,12 @@ enum class TestedVM {
     gentoo,
     fedora,
     centos,
-    nix,
     alpine,
-    Void,
     freebsd,
     openbsd,
     netbsd,
     dragonflybsd,
     windows,
-    osx,
 };
 
 // allows for using the << operator with testedvm
@@ -128,6 +125,7 @@ void run_startup_commands();
 void wait_for_vm_ready();
 void start_vm();
 std::string list_vm();
+std::string get_vm_image_paths();
 void clean_vm_resources();
 void delete_vm();
 void create_vm();

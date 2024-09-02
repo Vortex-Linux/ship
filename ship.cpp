@@ -90,14 +90,10 @@ std::ostream& operator<<(std::ostream& os, const TestedVM& vm) {
             return os << "gentoo";
         case TestedVM::fedora:
             return os << "fedora";
-        case TestedVM::nix:
-            return os << "nix";
         case TestedVM::alpine:
             return os << "alpine";
         case TestedVM::centos:
             return os << "centos";
-        case TestedVM::Void:
-            return os << "void";
         case TestedVM::freebsd:
             return os << "freebsd";
         case TestedVM::openbsd:
@@ -108,8 +104,6 @@ std::ostream& operator<<(std::ostream& os, const TestedVM& vm) {
             return os << "dragonflybsd";
         case TestedVM::windows:
             return os << "windows";
-        case TestedVM::osx:
-            return os << "osx";
         default:
             return os << "";
     }
