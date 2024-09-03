@@ -429,92 +429,113 @@ void get_iso_source() {
         std::cout << "Found the path as " << ship_env.source_local << "\n";
     }
 }
+void print_available_tested_vms() {
+    std::cout << "The available tested and configured vms are: " << std::endl;
+    std::cout << "tails" << std::endl;
+    std::cout << "whonix" << std::endl;
+    std::cout << "debian" << std::endl;
+    std::cout << "ubuntu" << std::endl;
+    std::cout << "arch" << std::endl;
+    std::cout << "gentoo" << std::endl;
+    std::cout << "fedora" << std::endl;
+    std::cout << "centos" << std::endl;
+    std::cout << "alpine" << std::endl;
+    std::cout << "freebsd" << std::endl;
+    std::cout << "openbsd" << std::endl;
+    std::cout << "netbsd" << std::endl;
+    std::cout << "dragonflybsd" << std::endl;
+    std::cout << "windows" << std::endl;
+
+}
+
+std::string get_tested_vm_link(const std::string &vm_name) {
+    std::cout << ship_env.source << std::endl;
+    if (vm_name == "tails") {
+        return "lynx -dump -listonly -nonumbers https://mirrors.edge.kernel.org/tails/stable/ | grep https://mirrors.edge.kernel.org/tails/stable/tails-amd64 | lynx -dump -listonly -nonumbers | grep -E 'iso$' | grep -v '\\.sig$'";
+    } else if (vm_name == "whonix") {
+        return "lynx -dump -listonly -nonumbers https://www.whonix.org/wiki/KVM | grep -E '.qcow2$'";
+    } else if (vm_name == "debian") {
+        return "echo https://cdimage.debian.org/images/cloud/bookworm/latest/debian-12-nocloud-amd64.qcow2";
+    } else if (vm_name == "ubuntu") {
+        return "lynx -dump -listonly -nonumbers https://cloud-images.ubuntu.com/noble/current/ | grep -E 'amd64.*\\.img$'";
+    } else if (vm_name == "arch") {
+        return "echo https://geo.mirror.pkgbuild.com/images/latest/Arch-Linux-x86_64-basic.qcow2";
+    } else if (vm_name == "gentoo") {
+        return "lynx -dump -listonly -nonumbers https://gentoo.osuosl.org/experimental/amd64/openstack/ | grep -E 'default.*\\.qcow2$' | grep -v 'nomultilib' | grep 'latest.qcow2$'";
+    } else if (vm_name == "fedora") {
+        return "lynx -dump -listonly -nonumbers https://fedoraproject.org/cloud/download | grep -E 'x86_64/.*Generic.*\\.qcow2$'";
+    } else if (vm_name == "alpine") {
+        return "lynx -dump -listonly -nonumbers https://alpinelinux.org/cloud/ | grep -E '.qcow2$' | grep x86_64 | grep nocloud | grep bios-tiny-r0 | head -n 1";
+    } else if (vm_name == "centos") {
+        return "lynx -dump -listonly -nonumbers https://cloud.centos.org/centos/9-stream/x86_64/images/ | grep -E '.qcow2$' | sort | tail -n 1";
+    } else if (vm_name == "freebsd") {
+        return "lynx -dump -listonly -nonumbers https://bsd-cloud-image.org | grep freebsd | grep -E 'zfs.*\\.qcow2$' | sort -V | tail -n 1";
+    } else if (vm_name == "openbsd") {
+        return "lynx -dump -listonly -nonumbers https://bsd-cloud-image.org | grep openbsd | grep -E '.qcow2$' | sort -V | tail -n 1";
+    } else if (vm_name == "netbsd") {
+        return "lynx -dump -listonly -nonumbers https://bsd-cloud-image.org | grep netbsd | grep -E '.qcow2$' | sort -V | tail -n 1";
+    } else if (vm_name == "dragonflybsd") {
+        return "lynx -dump -listonly -nonumbers https://bsd-cloud-image.org | grep dragonflybsd | grep -E 'hammer2.*\\.qcow2$' | sort -V | tail -n 1";
+    } else if (vm_name == "windows") {
+        return "echo https://cloudbase.it/euladownload.php?h=kvm";
+    }
+    return "";
+}
+
+void set_tested_vm(const std::string &vm_name) {
+    if (vm_name == "tails") {
+        ship_env.os = TestedVM::tails;
+    } else if (vm_name == "whonix") {
+        ship_env.os = TestedVM::whonix;
+    } else if (vm_name == "debian") {
+        ship_env.os = TestedVM::debian;
+    } else if (vm_name == "ubuntu") {
+        ship_env.os = TestedVM::ubuntu;
+    } else if (vm_name == "arch") {
+        ship_env.os = TestedVM::arch;
+    } else if (vm_name == "gentoo") {
+        ship_env.os = TestedVM::gentoo;
+    } else if (vm_name == "fedora") {
+        ship_env.os = TestedVM::fedora;
+    } else if (vm_name == "alpine") {
+        ship_env.os = TestedVM::alpine;
+    } else if (vm_name == "centos") {
+        ship_env.os = TestedVM::centos;
+    } else if (vm_name == "freebsd") {
+        ship_env.os = TestedVM::freebsd;
+    } else if (vm_name == "openbsd") {
+        ship_env.os = TestedVM::openbsd;
+    } else if (vm_name == "netbsd") {
+        ship_env.os = TestedVM::netbsd;
+    } else if (vm_name == "dragonflybsd") {
+        ship_env.os = TestedVM::dragonflybsd;
+    } else if (vm_name == "windows") {
+        ship_env.os = TestedVM::windows;
+    } else {
+        std::cout << "The specified vm is not available as a tested and configured vm" << std::endl;
+        return;
+    }
+
+    std::string vm_link_cmd = get_tested_vm_link(vm_name);
+    if (!vm_link_cmd.empty()) {
+        ship_env.source = exec(vm_link_cmd.c_str());
+    }
+}
 
 void get_tested_vm() {
     while (true) {
         std::cout << "Please specify a vm from our tested and configured vms(use help to get the list of the available configured vms): ";
         std::getline(std::cin, ship_env.source);
+
         if (ship_env.source == "help") {
-            std::cout << "The available tested and configured vms are: " << std::endl;
-            std::cout << "tails" << std::endl;
-            std::cout << "whonix" << std::endl;
-            std::cout << "debian" << std::endl;
-            std::cout << "ubuntu" << std::endl;
-            std::cout << "arch" << std::endl;
-            std::cout << "gentoo" << std::endl;
-            std::cout << "fedora" << std::endl;
-            std::cout << "centos" << std::endl;
-            std::cout << "alpine" << std::endl;
-            std::cout << "freebsd" << std::endl;
-            std::cout << "openbsd" << std::endl;
-            std::cout << "netbsd" << std::endl;
-            std::cout << "dragonflybsd" << std::endl;
-            std::cout << "windows" << std::endl;
-        }else {
-            if (strcmp(ship_env.source.c_str(), "tails") == 0) {
-                ship_env.os = TestedVM::tails; 
-                std::string find_image_folder_link_cmd = "lynx -dump -listonly -nonumbers https://mirrors.edge.kernel.org/tails/stable/ | grep https://mirrors.edge.kernel.org/tails/stable/tails-amd64";
-                ship_env.source = trim_trailing_whitespaces(exec(find_image_folder_link_cmd.c_str()));
-                std::string find_image_file_link_cmd = "lynx -dump -listonly -nonumbers " + ship_env.source + " | grep -E 'iso$' | grep -v '\\.sig$'";
-                ship_env.source = exec(find_image_file_link_cmd.c_str());
-
-            }else if (strcmp(ship_env.source.c_str(), "whonix") == 0) {
-                ship_env.os = TestedVM::whonix; 
-                std::string find_image_file_link_cmd = "lynx -dump -listonly -nonumbers https://www.whonix.org/wiki/KVM | grep -E '.qcow2$'";
-                ship_env.source = exec(find_image_file_link_cmd.c_str());
-
-            }else if (strcmp(ship_env.source.c_str(), "debian") == 0) {
-                ship_env.os = TestedVM::debian; 
-                ship_env.source = "https://cdimage.debian.org/images/cloud/bookworm/latest/debian-12-nocloud-amd64.qcow2";
-            }else if (strcmp(ship_env.source.c_str(), "ubuntu") == 0) {
-                ship_env.os = TestedVM::ubuntu; 
-                std::string find_image_file_link_cmd = "lynx -dump -listonly -nonumbers https://cloud-images.ubuntu.com/noble/current/ |  grep -E 'amd64.*\\.img$'";
-                ship_env.source = ship_env.source = exec(find_image_file_link_cmd.c_str());
-            }else if (strcmp(ship_env.source.c_str(), "arch") == 0) {
-                ship_env.os = TestedVM::arch; 
-                ship_env.source = "https://geo.mirror.pkgbuild.com/images/latest/Arch-Linux-x86_64-basic.qcow2";
-            }else if (strcmp(ship_env.source.c_str(), "gentoo") == 0) {
-                ship_env.os = TestedVM::gentoo; 
-                std::string find_image_file_link_cmd = "lynx -dump -listonly -nonumbers https://gentoo.osuosl.org/experimental/amd64/openstack/ | grep -E 'default.*\\.qcow2$' | grep -v 'nomultilib' | grep 'latest.qcow2$'";
-                ship_env.source = ship_env.source = exec(find_image_file_link_cmd.c_str());
-            }else if (strcmp(ship_env.source.c_str(), "fedora") == 0) {
-                ship_env.os = TestedVM::fedora;
-                std::string find_image_file_link_cmd = "lynx -dump -listonly -nonumbers https://fedoraproject.org/cloud/download | grep -E 'x86_64/.*Generic.*\\.qcow2$'";
-                ship_env.source = ship_env.source = exec(find_image_file_link_cmd.c_str());
-            }else if (strcmp(ship_env.source.c_str(), "alpine") == 0) {
-                ship_env.os = TestedVM::alpine; 
-                std::string find_image_file_link_cmd = "lynx -dump -listonly -nonumbers  https://alpinelinux.org/cloud/ | grep -E '.qcow2$' | grep x86_64 | grep nocloud | grep bios-tiny-r0 | head -n 1";
-                ship_env.source = ship_env.source = exec(find_image_file_link_cmd.c_str());
-            }else if (strcmp(ship_env.source.c_str(), "centos") == 0) {
-                ship_env.os = TestedVM::centos; 
-                std::string find_image_file_link_cmd = "lynx -dump -listonly -nonumbers https://cloud.centos.org/centos/9-stream/x86_64/images/ | grep -E '.qcow2$' | sort | tail -n 1"; 
-                ship_env.source = ship_env.source = exec(find_image_file_link_cmd.c_str());
-            }else if (strcmp(ship_env.source.c_str(), "freebsd") == 0) {
-                ship_env.os = TestedVM::freebsd; 
-                std::string find_image_file_link_cmd = "lynx -dump -listonly -nonumbers https://bsd-cloud-image.org | grep freebsd | grep -E 'zfs.*\\.qcow2$' | sort -V | tail -n 1"; 
-                ship_env.source = ship_env.source = exec(find_image_file_link_cmd.c_str());
-            }else if (strcmp(ship_env.source.c_str(), "openbsd") == 0) {
-                ship_env.os = TestedVM::openbsd; 
-                std::string find_image_file_link_cmd = "lynx -dump -listonly -nonumbers https://bsd-cloud-image.org | grep openbsd | grep -E '.qcow2$' | sort -V | tail -n 1"; 
-                ship_env.source = ship_env.source = exec(find_image_file_link_cmd.c_str());
-            }else if (strcmp(ship_env.source.c_str(), "netbsd") == 0) {
-                ship_env.os = TestedVM::netbsd; 
-                std::string find_image_file_link_cmd = "lynx -dump -listonly -nonumbers https://bsd-cloud-image.org | grep netbsd | grep -E '.qcow2$' | sort -V | tail -n 1"; 
-                ship_env.source = ship_env.source = exec(find_image_file_link_cmd.c_str());
-            }else if (strcmp(ship_env.source.c_str(), "dragonflybsd") == 0) {
-                ship_env.os = TestedVM::dragonflybsd; 
-                std::string find_image_file_link_cmd = "lynx -dump -listonly -nonumbers https://bsd-cloud-image.org | grep dragonflybsd | grep -E 'hammer2.*\\.qcow2$' | sort -V | tail -n 1"; 
-                ship_env.source = ship_env.source = exec(find_image_file_link_cmd.c_str());
-            }else if (strcmp(ship_env.source.c_str(), "windows") == 0) {
-                ship_env.os = TestedVM::windows; 
-                ship_env.source = "https://cloudbase.it/euladownload.php?h=kvm";
-            }else {
-                std::cout << "The specified vm is not available as a tested and configured vm" << std::endl;
-                continue;
+            print_available_tested_vms();
+        } else {
+            set_tested_vm(ship_env.source);
+            if (ship_env.os != TestedVM::UNKNOWN) {
+                break;
             }
-            break;
         }
-    }   
+    }
 }
 
 void create_disk_image() {
