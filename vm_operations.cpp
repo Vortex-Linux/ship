@@ -694,6 +694,43 @@ void find_vm_package_manager() {
     }
 }
 
+void send_vm_file() {
+    std::string get_vm_disk_image_cmd = "virsh domblklist " + ship_env.name + " --details | awk '/source file/ {print $3}' | grep '.qcow2$'";
+    std::string result = exec(get_vm_disk_image_cmd.c_str());
+    std::string send_vm_cmd = "croc send " + get_absolute_path(result);
+    std::cout << exec(send_vm_cmd.c_str()) << std::endl;
+}
+
+void receive_vm_file() {
+    std::string code;
+    std::cout << "Please type the secret code: ";
+    std::getline(std::cin, code);
+
+    std::string set_croc_secret_cmd = "export CROC_SECRET=" + code;
+    std::cout << exec(set_croc_secret_cmd.c_str()) << std::endl;
+
+    std::string source_local = get_executable_dir() + "images/disk-images/";
+
+    std::string receive_vm_cmd = "croc recv -o " + source_local;
+    std::cout << exec(receive_vm_cmd.c_str()) << std::endl;
+
+    std::string find_vm_image_cmd = "find " + source_local + " -type f -exec ls -t1 {} + | head -1";
+    std::string vm_image = exec(find_vm_image_cmd.c_str());
+
+    size_t extension_starting_position = source_local.find(".");
+    std::string image_name = source_local.substr(0, extension_starting_position);
+
+    std::cout << "Please specify the name of this VM (leaving this blank will set the name to the name given by the sender which is " << image_name << "): ";
+    std::string name_given;
+    std::getline(std::cin, name_given);
+    if (!name_given.empty()) {
+        ship_env.name = name_given;
+    } else {
+        ship_env.name = image_name;
+    }
+    create_vm();
+}
+
 void exec_action_for_vm() {
     std::string group = "libvirt";
     add_user_to_group(group);
@@ -736,10 +773,10 @@ void exec_action_for_vm() {
             exec_package_manager_operations();
             break;
         case ShipAction::RECEIVE:
-            receive_file();
+            receive_vm_file();
             break;
         case ShipAction::SEND:
-            send_file();
+            send_vm_file();
             break;
         default: 
             std::cout << "Invalid action for VM.\n";

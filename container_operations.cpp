@@ -288,6 +288,43 @@ void find_container_package_manager() {
     }
 }
 
+void send_container_file() {
+    std::string image = "/tmp/" + ship_env.name;
+
+    std::string make_container_image_cmd = "docker commit " + ship_env.name + " " + ship_env.name;
+    std::cout << exec(make_container_image_cmd.c_str()) << std::endl;
+
+    std::string make_container_tar_file_cmd = "docker save -o " + image + " " + ship_env.name;
+    std::cout << exec(make_container_tar_file_cmd.c_str()) << std::endl;
+
+    std::string send_container_image_cmd = "croc send " + image;
+    std::cout << exec(send_container_image_cmd.c_str()) << std::endl;
+
+    std::string image_cleanup_cmd = "docker rmi " + ship_env.name;
+    std::cout << exec(image_cleanup_cmd.c_str()) << std::endl;
+}
+
+void receive_container_file() {
+    std::string code;
+    std::cout << "Please type the secret code: ";
+    std::getline(std::cin, code);
+
+    std::string set_croc_secret_cmd = "export CROC_SECRET=" + code;
+    std::cout << exec(set_croc_secret_cmd.c_str()) << std::endl;
+
+    std::string receive_container_cmd = "croc recv";
+    std::cout << exec(receive_container_cmd.c_str()) << std::endl;
+
+    std::string find_container_image_cmd = "ls -t | head -1";
+    std::string image = exec(find_container_image_cmd.c_str());
+
+    std::string load_container_image_cmd = "docker load -i " + image;
+    std::cout << exec(load_container_image_cmd.c_str()) << std::endl;
+
+    std::string create_container_cmd = "distrobox create --name " + image + " --image " + image;
+    std::cout << exec(create_container_cmd.c_str()) << std::endl;
+}
+
 void exec_action_for_container() {
     if (!ship_env.package_manager_name.empty()) {
         
@@ -320,10 +357,10 @@ void exec_action_for_container() {
             exec_package_manager_operations();
             break;
         case ShipAction::RECEIVE:
-            receive_file();
+            receive_container_file();
             break;
         case ShipAction::SEND:
-            send_file();
+            send_container_file();
             break;
         default:
             std::cout << "Invalid action for container\n";
