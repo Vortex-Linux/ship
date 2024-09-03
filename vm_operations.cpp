@@ -5,7 +5,7 @@ void pass_password_to_tmux() {
 
     sleep(1);
 
-    while (exec((capture_tmux_last_line_cmd.c_str())).find("password for") != std::string::npos) {
+    while (exec((capture_tmux_last_line_cmd)).find("password for") != std::string::npos) {
         std::cout << "Please provide your root password: ";     
         std::string root_password;     
         std::getline(std::cin, root_password); 
@@ -20,7 +20,7 @@ void pass_password_to_tmux() {
 void wait_for_vm_ready() {
     while(true) {
         std::string capture_tmux_last_line_cmd = "tmux capture-pane -p -S -1 -t " + ship_env.name + " | tail -n 1";
-        std::string output = exec(capture_tmux_last_line_cmd.c_str());
+        std::string output = exec(capture_tmux_last_line_cmd);
 
         output = trim_trailing_whitespaces(output);
 
@@ -34,16 +34,16 @@ void wait_for_vm_ready() {
 void run_startup_commands() {
     boost::property_tree::ini_parser::read_ini(find_settings_file(), pt);
 
-    bool system_commands_left = true;
+    bool system_exec_commands_left = true;
     bool exec_commands_left = true;
     int current_command_number = 1;
 
-    while(system_commands_left || exec_commands_left) {
+    while(system_exec_commands_left || exec_commands_left) {
         try {
-            ship_env.command = pt.get<std::string>("system.command_" + std::to_string(current_command_number));
+            ship_env.command = pt.get<std::string>("system_exec.command_" + std::to_string(current_command_number));
             system_command_vm();
         } catch(const boost::property_tree::ptree_bad_path&) {
-            system_commands_left = false;
+            system_exec_commands_left = false;
         }
 
         sleep(1);
@@ -63,19 +63,19 @@ void run_startup_commands() {
 
 void start_vm() {
     std::string load_saved_cmd = "virsh snapshot-revert --current " + ship_env.name;
-    exec(load_saved_cmd.c_str());
+    exec(load_saved_cmd);
 
     std::string state = get_vm_state(ship_env.name);
 
     if (state.find("running") == std::string::npos) {
           std::string start_cmd = "virsh start " + ship_env.name;
-          exec(start_cmd.c_str());
+          exec(start_cmd);
     }
 
     std::cout << "VM " << ship_env.name << " started successfully.\n";
 
     std::string create_tmux_session_cmd = "tmux new -d -s" + ship_env.name;
-    system(create_tmux_session_cmd.c_str());
+    system_exec(create_tmux_session_cmd);
 
     ship_env.command = "virsh console " + ship_env.name;
     system_command_vm();
@@ -89,12 +89,12 @@ void start_vm() {
 
 void view_vm_console() {
     std::string view_cmd = "tmux attach-session -t " + ship_env.name;      
-    system(view_cmd.c_str());
+    system_exec(view_cmd);
 }
 
 void view_vm_gui() {
     std::string view_cmd = "virt-viewer " + ship_env.name; 
-    system(view_cmd.c_str());
+    system_exec(view_cmd);
 }
 
 void view_vm() {
@@ -111,17 +111,17 @@ void view_vm() {
 
 void pause_vm() {
     std::string view_cmd = "virsh suspend " + ship_env.name; 
-    system(view_cmd.c_str());
+    system_exec(view_cmd);
 }
 
 void resume_vm() {
     std::string view_cmd = "virsh resume " + ship_env.name; 
-    system(view_cmd.c_str());
+    system_exec(view_cmd);
 }
 
 void delete_old_snapshots() {
     std::string list_snapshot_cmd = "virsh snapshot-list --name " + ship_env.name;
-    std::string snapshot_list = exec(list_snapshot_cmd.c_str());
+    std::string snapshot_list = exec(list_snapshot_cmd);
     std::vector<std::string> snapshots = split_string_by_line(snapshot_list);
 
     std::reverse(snapshots.begin(), snapshots.end());
@@ -132,7 +132,7 @@ void delete_old_snapshots() {
         if (snapshot != latest_snapshot) {
             std::cout << "Deleting old snapshot: " << snapshot << std::endl;
             std::string delete_cmd = "virsh snapshot-delete " + ship_env.name + " " + snapshot;
-            system(delete_cmd.c_str());
+            system_exec(delete_cmd);
         }
     }
 
@@ -141,14 +141,14 @@ void delete_old_snapshots() {
 
 void save_vm() {
     std::string save_cmd = "virsh snapshot-create --atomic " + ship_env.name; 
-    system(save_cmd.c_str());
+    system_exec(save_cmd);
 
     delete_old_snapshots();
 }
 
 void shutdown_vm() {
     std::string shutdown_cmd = "virsh shutdown " + ship_env.name; 
-    system(shutdown_cmd.c_str()); 
+    system_exec(shutdown_cmd); 
     
     std::string shutdown_signal = "virsh --event lifecycle --timeout 5 " + ship_env.name;
     bool timeout = system(shutdown_signal.c_str());
@@ -164,14 +164,14 @@ void shutdown_vm() {
 
         std::cout << "Forcefully shutting down " << ship_env.name << ".\n";
         std::string shutdown_cmd = "virsh destroy " + ship_env.name + "\n";
-        system(shutdown_cmd.c_str());
+        system_exec(shutdown_cmd);
     }
     std::cout << "Successfully shutdown " << ship_env.name; 
 }
 
 std::string get_vm_image_paths() {
     ship_env.command = "virsh domblklist " + ship_env.name + " --details | awk '{print $4}' | tail -n +3 | head -n -1";
-    std::string image_paths = exec(ship_env.command.c_str());
+    std::string image_paths = exec(ship_env.command);
     return image_paths;
 }
 
@@ -185,11 +185,11 @@ void clean_vm_resources() {
     while (std::getline(stream, image_path)) {
         std::cout << "Deleting " << image_path << std::endl;
         ship_env.command = "rm " + image_path;
-        system(ship_env.command.c_str());
+        system_exec(ship_env.command);
     }
 
     ship_env.command = "rm " + get_executable_dir() + "settings/vm-settings/" + ship_env.name + ".ini";
-    system(ship_env.command.c_str());
+    system_exec(ship_env.command);
 
     std::cout << "Successfully deleted all resources which are not needed anymore." << std::endl;;
 }
@@ -199,13 +199,13 @@ void delete_vm() {
     if (state.find("running") != std::string::npos || state.find("paused") != std::string::npos) {
         std::cout << "Forcefully shutting down VM " << ship_env.name << " before deletion.\n";
         std::string shutdown_cmd = "virsh destroy " + ship_env.name;
-        system(shutdown_cmd.c_str());
+        system_exec(shutdown_cmd);
     }
 
     clean_vm_resources();
 
     std::string undefine_cmd = "virsh undefine --nvram " + ship_env.name;
-    exec(undefine_cmd.c_str());
+    exec(undefine_cmd);
     std::cout << "VM " << ship_env.name << " deleted successfully.\n";
 
 }
@@ -392,14 +392,14 @@ std::string generate_vm_xml() {
     xml_file.close();
 
     ship_env.command = "touch " + get_executable_dir() + "settings/vm-settings/" + ship_env.name + ".ini";
-    system(ship_env.command.c_str());
+    system_exec(ship_env.command);
 
     return xml_filename;
 }
 
 void define_vm(const std::string& xml_filename) {
     std::string define_cmd = "virsh define " + xml_filename;
-    exec(define_cmd.c_str());
+    exec(define_cmd);
 
     std::cout << "New VM configuration defined.\n";
 }
@@ -422,10 +422,10 @@ void get_iso_source() {
     if(!ship_env.source.empty()) {
         std::cout << "Downloading iso to images" << "\n";
         std::string download_cmd = "aria2c --dir " + get_executable_dir() + "images/iso-images " + ship_env.source;
-        system(download_cmd.c_str());
+        system_exec(download_cmd);
         std::cout << "Finding the path to the downloaded iso image" << "\n";
         std::string find_latest_image_cmd = "find images/iso-images  -type f -exec ls -t1 {} + | head -1";
-        ship_env.source_local = exec(find_latest_image_cmd.c_str());
+        ship_env.source_local = exec(find_latest_image_cmd);
         std::cout << "Found the path as " << ship_env.source_local << "\n";
     }
 }
@@ -518,7 +518,7 @@ void set_tested_vm(const std::string &vm_name) {
 
     std::string vm_link_cmd = get_tested_vm_link(vm_name);
     if (!vm_link_cmd.empty()) {
-        ship_env.source = exec(vm_link_cmd.c_str());
+        ship_env.source = exec(vm_link_cmd);
     }
 }
 
@@ -544,7 +544,7 @@ void create_disk_image() {
     if (!check_file.good()) {
         std::cout << "Creating disk image at: " << ship_env.disk_image_path << std::endl;
         std::string create_disk_cmd = "qemu-img create -f qcow2 " + ship_env.disk_image_path + " 1G";
-        system(create_disk_cmd.c_str());
+        system_exec(create_disk_cmd);
     }
     check_file.close();
 }
@@ -593,8 +593,8 @@ void configure_vm() {
         case TestedVM::arch:
             boost::property_tree::ini_parser::read_ini(find_settings_file(), pt);
 
-            pt.put("system.command_1", "arch");
-            pt.put("system.command_2", "arch");
+            pt.put("system_exec.command_1", "arch");
+            pt.put("system_exec.command_2", "arch");
 
             boost::property_tree::ini_parser::write_ini(find_settings_file(), pt);
 
@@ -633,36 +633,36 @@ void configure_vm() {
 void start_vm(const std::string& name) {
     std::cout << "Starting VM " << name << "...\n";
     std::string start_cmd = "virsh start " + name;
-    exec(start_cmd.c_str());
+    exec(start_cmd);
 }
 
 void system_command_vm() {
     std::string run_cmd = "tmux send-keys -t " + ship_env.name + " '" + ship_env.command + "' C-m";
-    system(run_cmd.c_str());
+    system_exec(run_cmd);
 }
 
 bool exec_command_vm() {
     std::string start_marker = "MARKER_" + std::to_string(rand());
     std::string start_marker_cmd = "tmux send-keys -t " + ship_env.name + " '" + start_marker + "' C-m";
-    system(start_marker_cmd.c_str());
+    system_exec(start_marker_cmd);
 
     system_command_vm();
 
     std::string end_marker = "MARKER_" + std::to_string(rand());
     std::string end_marker_cmd = "tmux send-keys -t " + ship_env.name + " 'echo " + end_marker + "' C-m";
-    system(end_marker_cmd.c_str());
+    system_exec(end_marker_cmd);
 
     std::string capture_cmd = "tmux capture-pane -t " + ship_env.name + " -pS - | tail -n 2 | head -n 1";
 
     while (true) {
-        std::string output = exec(capture_cmd.c_str());
+        std::string output = exec(capture_cmd);
         if (output.find(end_marker) != std::string::npos) {
             break;
         }
     }
 
     capture_cmd = "tmux capture-pane -t " + ship_env.name + " -pS - | tac | grep -m1 -B " + std::to_string(INT_MAX) + " " + start_marker + " | tac | tail -n +3 | sed '/^\\s*$/d' | head -n -3";
-    std::string output = exec(capture_cmd.c_str());
+    std::string output = exec(capture_cmd);
 
     if (ship_env.action == ShipAction::EXEC) {
         std::cout << output;
@@ -696,9 +696,9 @@ void find_vm_package_manager() {
 
 void send_vm_file() {
     std::string get_vm_disk_image_cmd = "virsh domblklist " + ship_env.name + " --details | awk '/source file/ {print $3}' | grep '.qcow2$'";
-    std::string result = exec(get_vm_disk_image_cmd.c_str());
+    std::string result = exec(get_vm_disk_image_cmd);
     std::string send_vm_cmd = "croc send " + get_absolute_path(result);
-    std::cout << exec(send_vm_cmd.c_str()) << std::endl;
+    std::cout << exec(send_vm_cmd) << std::endl;
 }
 
 void receive_vm_file() {
@@ -707,15 +707,15 @@ void receive_vm_file() {
     std::getline(std::cin, code);
 
     std::string set_croc_secret_cmd = "export CROC_SECRET=" + code;
-    std::cout << exec(set_croc_secret_cmd.c_str()) << std::endl;
+    std::cout << exec(set_croc_secret_cmd) << std::endl;
 
     std::string source_local = get_executable_dir() + "images/disk-images/";
 
     std::string receive_vm_cmd = "croc recv -o " + source_local;
-    std::cout << exec(receive_vm_cmd.c_str()) << std::endl;
+    std::cout << exec(receive_vm_cmd) << std::endl;
 
     std::string find_vm_image_cmd = "find " + source_local + " -type f -exec ls -t1 {} + | head -1";
-    std::string vm_image = exec(find_vm_image_cmd.c_str());
+    std::string vm_image = exec(find_vm_image_cmd);
 
     size_t extension_starting_position = source_local.find(".");
     std::string image_name = source_local.substr(0, extension_starting_position);
@@ -734,7 +734,7 @@ void receive_vm_file() {
 void exec_action_for_vm() {
     std::string group = "libvirt";
     add_user_to_group(group);
-    setenv("LIBVIRT_DEFAULT_URI", "qemu:///system", 1);
+    setenv("LIBVIRT_DEFAULT_URI", "qemu:///system_exec", 1);
 
     switch(ship_env.action) {
         case ShipAction::CREATE:

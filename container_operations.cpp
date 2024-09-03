@@ -2,14 +2,14 @@
 
 void stop_container() {
     std::string cmd = "distrobox stop " + ship_env.name;
-    std::string result = exec(cmd.c_str());
-    system(cmd.c_str());
+    std::string result = exec(cmd);
+    system_exec(cmd);
 
 }
 
 void delete_container() {
     std::string cmd = "distrobox rm " + ship_env.name;
-    system(cmd.c_str());
+    system_exec(cmd);
 }
 
 void create_container() {
@@ -29,7 +29,7 @@ void create_container() {
     }
 
     std::string cmd = "distrobox create " + ship_env.name + " --image " + ship_env.image;
-    system(cmd.c_str());
+    system_exec(cmd);
     std::cout << "Container " << ship_env.name << " created successfully.\n";
 }
 
@@ -259,18 +259,18 @@ void get_tested_container() {
 
 void upgrade_container() {
     std::string cmd = "distrobox upgrade " + ship_env.name;
-    system(cmd.c_str());
+    system_exec(cmd);
 }
 
 void view_container() {
     std::string cmd = "distrobox enter " + ship_env.name;
-    system(cmd.c_str());
+    system_exec(cmd);
 }
 
 void exec_command_container() {
     std::cout << ship_env.command; 
     std::string cmd = "distrobox enter " + ship_env.name + " -- " + ship_env.command;
-    system(cmd.c_str());
+    system_exec(cmd);
 }
 
 bool check_container_command_exists(const std::string& command) {
@@ -292,16 +292,16 @@ void send_container_file() {
     std::string image = "/tmp/" + ship_env.name;
 
     std::string make_container_image_cmd = "docker commit " + ship_env.name + " " + ship_env.name;
-    std::cout << exec(make_container_image_cmd.c_str()) << std::endl;
+    std::cout << exec(make_container_image_cmd) << std::endl;
 
     std::string make_container_tar_file_cmd = "docker save -o " + image + " " + ship_env.name;
-    std::cout << exec(make_container_tar_file_cmd.c_str()) << std::endl;
+    std::cout << exec(make_container_tar_file_cmd) << std::endl;
 
     std::string send_container_image_cmd = "croc send " + image;
-    std::cout << exec(send_container_image_cmd.c_str()) << std::endl;
+    std::cout << exec(send_container_image_cmd) << std::endl;
 
     std::string image_cleanup_cmd = "docker rmi " + ship_env.name;
-    std::cout << exec(image_cleanup_cmd.c_str()) << std::endl;
+    std::cout << exec(image_cleanup_cmd) << std::endl;
 }
 
 void receive_container_file() {
@@ -310,19 +310,19 @@ void receive_container_file() {
     std::getline(std::cin, code);
 
     std::string set_croc_secret_cmd = "export CROC_SECRET=" + code;
-    std::cout << exec(set_croc_secret_cmd.c_str()) << std::endl;
+    std::cout << exec(set_croc_secret_cmd) << std::endl;
 
     std::string receive_container_cmd = "croc recv";
-    std::cout << exec(receive_container_cmd.c_str()) << std::endl;
+    std::cout << exec(receive_container_cmd) << std::endl;
 
     std::string find_container_image_cmd = "ls -t | head -1";
-    std::string image = exec(find_container_image_cmd.c_str());
+    std::string image = exec(find_container_image_cmd);
 
     std::string load_container_image_cmd = "docker load -i " + image;
-    std::cout << exec(load_container_image_cmd.c_str()) << std::endl;
+    std::cout << exec(load_container_image_cmd) << std::endl;
 
     std::string create_container_cmd = "distrobox create --name " + image + " --image " + image;
-    std::cout << exec(create_container_cmd.c_str()) << std::endl;
+    std::cout << exec(create_container_cmd) << std::endl;
 }
 
 void exec_action_for_container() {

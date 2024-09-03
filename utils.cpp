@@ -68,10 +68,19 @@ std::string trim_trailing_whitespaces(const std::string& str) {
     return str.substr(first, (last - first + 1));
 }
 
-std::string exec(const char* cmd) {
+void system_exec(const std::string& cmd) {
+    int return_code = system(cmd.c_str());
+
+    if (return_code != 0) {
+        std::cerr << "Failed to execute command: " << cmd << std::endl;
+        std::exit(EXIT_FAILURE);
+    }
+}
+
+std::string exec(const std::string& cmd) {
     std::array<char, 128> buffer;
     std::string result;
-    std::unique_ptr<FILE, int (*)(FILE*)> pipe(popen(cmd, "r"), pclose);
+    std::unique_ptr<FILE, int (*)(FILE*)> pipe(popen(cmd.c_str(), "r"), pclose);
     if (!pipe) {
         throw std::runtime_error("popen() failed!");
     }
@@ -83,19 +92,19 @@ std::string exec(const char* cmd) {
 
 std::string list_vm() {
     std::string cmd = "virsh list --all";
-    std::string result = exec(cmd.c_str());
+    std::string result = exec(cmd);
     return result;
 }
 
 std::string list_container() {
     std::string cmd = "distrobox list";
-    std::string result = exec(cmd.c_str());
+    std::string result = exec(cmd);
     return result;
 }
 
 std::string get_vm_state(const std::string &vm_name) {
     std::string cmd = "virsh domstate " + vm_name;
-    return exec(cmd.c_str());
+    return exec(cmd);
 }
 
 std::vector<int> extract_numbers_with_prefix(const std::string& result,const std::string& prefix) {
@@ -121,7 +130,7 @@ std::vector<int> extract_numbers_with_prefix(const std::string& result,const std
 }
 
 int get_next_available_number_in_command_output(const std::string& command,const std::string& prefix) {
-    std::string result = exec(command.c_str());
+    std::string result = exec(command);
     std::vector<int> numbers = extract_numbers_with_prefix(result,prefix);
 
     if (numbers.empty()) {
@@ -251,12 +260,6 @@ void add_user_to_group(const std::string& group) {
         std::cout << "User is not in the " << group << " group." << std::endl;
         std::cout << "Adding user to the " << group << " group..." << std::endl;
         std::string command = "sudo usermod -aG " + group + " $(whoami)";
-        if (system(command.c_str()) == 0) {
-            std::cout << "User successfully added to the " << group << " group." << std::endl;
-            std::cout << "Please log out and log back in for the changes to take effect." << std::endl;
-            exit(0);
-        } else {
-            std::cerr << "Failed to add the user to the " << group << " group." << std::endl;
-        }
+        system_exec(command);
     } 
 }
