@@ -249,7 +249,7 @@ void create_vm() {
         if (extension == ".iso") {
             ship_env.iso_path = get_absolute_path(ship_env.source_local);
             create_disk_image();
-        }else if (extension == ".qcow2" || extension == ".qcow") {
+        }else if (extension == ".qcow2" || extension == ".qcow" || extension == ".img") {
             ship_env.disk_image_path = get_absolute_path(ship_env.source_local);
         }
     }
@@ -451,13 +451,13 @@ void print_available_tested_vms() {
 std::string get_tested_vm_link(const std::string &vm_name) {
     std::cout << ship_env.source << std::endl;
     if (vm_name == "tails") {
-        return "lynx -dump -listonly -nonumbers https://mirrors.edge.kernel.org/tails/stable/ | grep https://mirrors.edge.kernel.org/tails/stable/tails-amd64 | lynx -dump -listonly -nonumbers | grep -E 'iso$' | grep -v '\\.sig$'";
+        return "lynx -dump -listonly -nonumbers https://mirrors.edge.kernel.org/tails/stable/ | grep https://mirrors.edge.kernel.org/tails/stable/tails-amd64 | xargs -I {} lynx -dump -listonly -nonumbers '{}' | grep -E 'iso$' | grep -v '\\.sig$'";
     } else if (vm_name == "whonix") {
         return "lynx -dump -listonly -nonumbers https://www.whonix.org/wiki/KVM | grep -E '.qcow2$'";
     } else if (vm_name == "debian") {
         return "echo https://cdimage.debian.org/images/cloud/bookworm/latest/debian-12-nocloud-amd64.qcow2";
     } else if (vm_name == "ubuntu") {
-        return "lynx -dump -listonly -nonumbers https://cloud-images.ubuntu.com/noble/current/ | grep -E 'amd64.*\\.img$'";
+        return "lynx -dump -listonly -nonumbers https://cloud-images.ubuntu.com/releases | grep -E 'cloud-images.ubuntu.com/releases/[0-9]+(\\.[0-9]+)+/?$' | sort -V | tail -n 1 | awk '{print $0 \"/release/\"}' | xargs -I {} lynx -dump -listonly -nonumbers '{}' | grep -E 'amd64.img$'";
     } else if (vm_name == "arch") {
         return "echo https://geo.mirror.pkgbuild.com/images/latest/Arch-Linux-x86_64-basic.qcow2";
     } else if (vm_name == "gentoo") {
