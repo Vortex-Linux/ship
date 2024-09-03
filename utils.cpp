@@ -105,7 +105,10 @@ std::vector<int> extract_numbers_with_prefix(const std::string& result,const std
     while (getline(stream, line)) {
         size_t pos = line.find(prefix);
         if (pos != std::string::npos) {
-            std::string num_str = line.substr(pos + 2);
+
+            size_t start_pos = pos + prefix.length();
+            std::string num_str = line.substr(start_pos);
+            std::cout << num_str << std::endl;
             try {
                 int num = stoi(num_str);
                 numbers.push_back(num);
@@ -137,8 +140,8 @@ int get_next_available_vm_number(){
 }
 
 int get_next_available_container_number(){
-    std::string command = "distrobox list | grep vm";
-    std::string prefix = "container";
+    std::string command = "distrobox list | grep container";
+    std::string prefix = "container_";
     int next_container_number = get_next_available_number_in_command_output(command,prefix);
     return next_container_number;
 }
