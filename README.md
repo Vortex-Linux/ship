@@ -1,33 +1,77 @@
 # Ship
 - Ship if a powerful tool made for Vortex Linux designed to enhance the user's capability of using various environments for various needs mainly package management and installing software tailored to specific platforms. <br>
-- It supports the use of virtual machines(virtual machines are managed using libvirt,virsh,qemu and other utilities for them)for providing isolated environments for installing package and doing whatever the user wants.It also supports the use of containers(Containers are managed using distrobox and docker),the containers do not provide isolated environments and should be used for installing packages from various distros.
+- It supports the use of virtual machines(virtual machines are managed using libvirt,virsh,qemu and other utilities for them)for providing isolated/unisolated environments for installing package and doing whatever the user wants.It also supports the use of containers(Containers are managed using distrobox and docker),the containers do not provide isolated environments and should be used for installing packages from various distros.
 
 ## Setup and Installation 
 
 ### Note:(Ship is the superutility of Vortex Linux but can still be used with other distros. If you are using Vortex Linux, Ship is available by default, and you don't have to download it.)
 
+### Important Prerequisites
+
+- Ensure that virtualization is enabled in the BIOS.
+- The kernel must have the "kvm" module enabled for virtualization to function properly.
+
 ### Debian based distros
 ```
 git clone https://github.com/Vortex-Linux/ship.git
-sudo apt install qemu-kvm libvirt-daemon-system virt-viewer
+sudo apt install qemu-kvm libvirt-daemon-system virt-viewer libboost-all-dev lynx aria2 tmux
 curl https://raw.githubusercontent.com/89luca89/distrobox/main/install | sudo sh
 wget https://github.com/schollz/croc/releases/download/v9.4.2/croc_9.4.2_Linux-64bit.deb
 sudo dpkg -i croc-*.deb
 sudo usermod -a -G libvirt $user
+sudo systemctl enable --now cloud-init-local.service
+sudo systemctl enable --now cloud-init.service
+sudo systemctl enable --now cloud-config.service
+sudo systemctl enable --now cloud-final.service
 ```
 ### Fedora based distros
 ```
 git clone https://github.com/Vortex-Linux/ship.git
 curl https://raw.githubusercontent.com/89luca89/distrobox/main/install | sudo sh
-sudo dnf install qemu croc @virtualization
+sudo dnf install qemu croc @virtualization boost-devel lynx aria2 tmux
 sudo usermod -a -G libvirt $user
+sudo systemctl enable --now cloud-init-local.service
+sudo systemctl enable --now cloud-init.service
+sudo systemctl enable --now cloud-config.service
+sudo systemctl enable --now cloud-final.service
 ```
 
 ### Arch based distros
 ```
 git clone https://github.com/Vortex-Linux/ship.git
-sudo pacman -S libvirt qemu-base distrobox docker croc virt-viewer
+sudo pacman -S libvirt qemu-base distrobox docker croc virt-viewer boost lynx aria2 tmux
 sudo usermod -a -G libvirt $user
+sudo systemctl enable --now cloud-init-local.service
+sudo systemctl enable --now cloud-init.service
+sudo systemctl enable --now cloud-config.service
+sudo systemctl enable --now cloud-final.service
+```
+
+### NixOS
+
+You need the `kvm` kernel module for virtualization to work.
+Choose either `kvm-intel` or `kvm-amd` depending on your CPU.
+```
+boot.kernelModules = [ ... "kvm-intel" ... ];
+```
+
+Enable `libvirtd`
+```
+virtualisation.libvirtd.enable = true;
+```
+
+Add the user to the `docker` and `libvirtd` groups:
+```nix
+users.users.my_username = {
+  ...
+  extraGroups = [ ... "docker" "libvirtd" ... ];
+  ...
+};
+```
+
+After rebooting your machine, run:
+```
+nix develop
 ```
 
 ### Compiling
@@ -100,5 +144,4 @@ Commands:
     send NAME                     Share the specified container to an end user (protected by a secret code)
     receive                       Receive the container shared by an end user (protected by a secret code)
 ```
-
 
