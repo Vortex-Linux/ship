@@ -5,7 +5,7 @@ CXX := g++
 CXXFLAGS := -std=c++11 -Wall -Wextra -I /usr/include/boost
 
 # Linker flags
-LDFLAGS := -L /usr/lib -lboost_system -lboost_filesystem 
+LDFLAGS := -L /usr/lib -lboost_system -lboost_filesystem -lboost_program_options
 
 # Source files
 SRCS := ship.cpp utils.cpp vm_operations.cpp container_operations.cpp 

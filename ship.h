@@ -21,6 +21,7 @@
 #include <random>
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/ini_parser.hpp>
+#include <boost/program_options.hpp>
 
 extern boost::property_tree::ptree pt;
 
