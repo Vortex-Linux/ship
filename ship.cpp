@@ -152,6 +152,7 @@ void process_operands(int argc, char *argv[]) {
 
     po::positional_options_description positional;
     positional.add("action", 1);
+    positional.add("name", 1);
 
     po::options_description hidden("Hidden options");
     hidden.add_options()

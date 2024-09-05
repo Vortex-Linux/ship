@@ -391,6 +391,9 @@ std::string generate_vm_xml() {
     xml_file << vm_xml.str();
     xml_file.close();
 
+    ship_env.command = "mkdir -p " + get_executable_dir() + "settings/vm-settings/";
+    system_exec(ship_env.command);
+
     ship_env.command = "touch " + get_executable_dir() + "settings/vm-settings/" + ship_env.name + ".ini";
     system_exec(ship_env.command);
 
@@ -734,7 +737,7 @@ void receive_vm_file() {
 void exec_action_for_vm() {
     std::string group = "libvirt";
     add_user_to_group(group);
-    setenv("LIBVIRT_DEFAULT_URI", "qemu:///system_exec", 1);
+    setenv("LIBVIRT_DEFAULT_URI", "qemu:///system", 1);
 
     switch(ship_env.action) {
         case ShipAction::CREATE:

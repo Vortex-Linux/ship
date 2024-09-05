@@ -117,7 +117,6 @@ std::vector<int> extract_numbers_with_prefix(const std::string& result,const std
 
             size_t start_pos = pos + prefix.length();
             std::string num_str = line.substr(start_pos);
-            std::cout << num_str << std::endl;
             try {
                 int num = stoi(num_str);
                 numbers.push_back(num);
