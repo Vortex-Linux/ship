@@ -90,8 +90,8 @@ Usage, Run:
 
 Options:
   --help                          Show this help message and exit
-  --virtual-machine or -vm        Specify action is for VM
-  --container or -ctr             Specify action is for container
+  --virtual-machine or --vm        Specify action is for VM
+  --container or --ctr             Specify action is for container
   --name NAME                     Specifies the name of the container or VM an action should be executed on
 
 Commands:

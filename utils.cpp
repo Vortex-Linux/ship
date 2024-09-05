@@ -4,8 +4,8 @@ void show_help() {
     std::cout << "./ship [OPTIONS] COMMAND [ARGS...]" << std::endl << std::endl;
     std::cout << "Options:" << std::endl;
     std::cout << "  --help                          Show this help message and exit" << std::endl;
-    std::cout << "  --virtual-machine or -vm        Specify action is for VM" << std::endl;
-    std::cout << "  --container or -ctr             Specify action is for container" << std::endl;
+    std::cout << "  --virtual-machine or --vm        Specify action is for VM" << std::endl;
+    std::cout << "  --container or --ctr             Specify action is for container" << std::endl;
     std::cout << "  --name NAME                     Specifies the name of the container or VM an action should be executed on" << std::endl << std::endl;
 
     std::cout << "Commands:" << std::endl;
