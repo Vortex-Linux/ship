@@ -74,7 +74,7 @@ void start_vm() {
 
     std::cout << "VM " << ship_env.name << " started successfully.\n";
 
-    std::string create_tmux_session_cmd = "tmux new -d -s" + ship_env.name;
+    std::string create_tmux_session_cmd = "tmux new -d -s " + ship_env.name;
     system_exec(create_tmux_session_cmd);
 
     ship_env.command = "virsh console " + ship_env.name;
@@ -279,6 +279,7 @@ std::string generate_vm_xml() {
     <type arch='x86_64' machine='pc-i440fx-2.9'>hvm</type>
     <boot dev='hd'/>
     <boot dev='cdrom'/>
+    <kernel commandLine="quiet loglevel=0"/>
   </os>
   <features>
     <acpi/>
@@ -335,11 +336,10 @@ std::string generate_vm_xml() {
     <memballoon model='virtio'/>
 )";
     switch(ship_env.os) {
-        case TestedVM::tails:
-            break;
         case TestedVM::whonix:
             break;
         case TestedVM::debian:
+        case TestedVM::tails:
             vm_xml << R"(
       <console type='pty'>
         <target type='virtio'/>
@@ -546,6 +546,9 @@ void create_disk_image() {
     std::ifstream check_file(ship_env.disk_image_path);
     if (!check_file.good()) {
         std::cout << "Creating disk image at: " << ship_env.disk_image_path << std::endl;
+
+        ship_env.command = "mkdir -p " + get_executable_dir() + "images/disk-images"; 
+
         std::string create_disk_cmd = "qemu-img create -f qcow2 " + ship_env.disk_image_path + " 1G";
         system_exec(create_disk_cmd);
     }
@@ -590,6 +593,16 @@ void configure_vm() {
         case TestedVM::whonix:
             return;
         case TestedVM::debian:
+            boost::property_tree::ini_parser::read_ini(find_settings_file(), pt);
+
+            pt.put("system_exec.command_1", "root");
+
+            boost::property_tree::ini_parser::write_ini(find_settings_file(), pt);
+
+            run_startup_commands();
+
+            ship_env.command = "apt update";
+            exec_command_vm();
             return;
         case TestedVM::ubuntu:
             return;
