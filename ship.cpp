@@ -1,5 +1,8 @@
 #include "ship.h"
 
+//std::string ship_lib_path = "/var/lib/ship/";
+std::string ship_lib_path = "/home/ship/";
+
 boost::property_tree::ptree pt;
 
 std::ostream& operator<<(std::ostream& os, const ShipMode& mode) {

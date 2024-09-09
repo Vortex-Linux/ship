@@ -105,6 +105,8 @@ struct ShipEnviornment {
     std::string disk_image_path;
 };
 
+extern std::string ship_lib_path; 
+
 extern ShipEnviornment ship_env;
 
 void show_help();
@@ -178,6 +180,5 @@ void add_user_to_group(const std::string& group);
 void restart_systemctl_service(const std::string& service_name);
 std::string get_absolute_path(const std::string &relative_path);
 std::string generate_mac_address();
-std::string get_executable_dir();
 #endif // SHIP_H
 

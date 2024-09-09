@@ -74,6 +74,9 @@ void start_vm() {
 
     std::cout << "VM " << ship_env.name << " started successfully.\n";
 
+    ship_env.command = "tmux has-session -t " + ship_env.name + " && tmux kill-session -t " + ship_env.name + " || true";
+    system_exec(ship_env.command);
+
     std::string create_tmux_session_cmd = "tmux new -d -s " + ship_env.name;
     system_exec(create_tmux_session_cmd);
 
@@ -188,7 +191,7 @@ void clean_vm_resources() {
         system_exec(ship_env.command);
     }
 
-    ship_env.command = "rm " + get_executable_dir() + "settings/vm-settings/" + ship_env.name + ".ini";
+    ship_env.command = "rm " + ship_lib_path + "settings/vm-settings/" + ship_env.name + ".ini";
     system_exec(ship_env.command);
 
     std::cout << "Successfully deleted all resources which are not needed anymore." << std::endl;;
@@ -336,9 +339,18 @@ std::string generate_vm_xml() {
     <memballoon model='virtio'/>
 )";
     switch(ship_env.os) {
-        case TestedVM::whonix:
-            break;
+        case TestedVM::gentoo:
+        case TestedVM::ubuntu:
+        case TestedVM::fedora:
+        case TestedVM::freebsd:
+        case TestedVM::openbsd:
+        case TestedVM::netbsd:
+        case TestedVM::dragonflybsd:
+        case TestedVM::windows:
         case TestedVM::debian:
+        case TestedVM::centos:
+        case TestedVM::alpine:
+        case TestedVM::whonix:
         case TestedVM::tails:
             vm_xml << R"(
       <console type='pty'>
@@ -349,32 +361,12 @@ std::string generate_vm_xml() {
       </serial>
             )";
             break;
-        case TestedVM::ubuntu:
-            break;
         case TestedVM::arch:
             vm_xml << R"(
       <console type='pty'>
         <target type='virtio'/>
       </console>
             )";
-            break;
-        case TestedVM::gentoo:
-            break;
-        case TestedVM::fedora:
-            break;
-        case TestedVM::alpine:
-            break;
-        case TestedVM::centos:
-            break;
-        case TestedVM::freebsd:
-            break;
-        case TestedVM::openbsd:
-            break;
-        case TestedVM::netbsd:
-            break;
-        case TestedVM::dragonflybsd:
-            break;
-        case TestedVM::windows:
             break;
         default:
             break;
@@ -391,10 +383,7 @@ std::string generate_vm_xml() {
     xml_file << vm_xml.str();
     xml_file.close();
 
-    ship_env.command = "mkdir -p " + get_executable_dir() + "settings/vm-settings/";
-    system_exec(ship_env.command);
-
-    ship_env.command = "touch " + get_executable_dir() + "settings/vm-settings/" + ship_env.name + ".ini";
+    ship_env.command = "touch " + ship_lib_path + "settings/vm-settings/" + ship_env.name + ".ini";
     system_exec(ship_env.command);
 
     return xml_filename;
@@ -424,7 +413,7 @@ void start_vm_with_confirmation_prompt() {
 void get_iso_source() {
     if(!ship_env.source.empty()) {
         std::cout << "Downloading iso to images" << "\n";
-        std::string download_cmd = "aria2c --dir " + get_executable_dir() + "images/iso-images " + ship_env.source;
+        std::string download_cmd = "aria2c --dir " + ship_lib_path + "images/iso-images " + ship_env.source;
         system_exec(download_cmd);
         std::cout << "Finding the path to the downloaded iso image" << "\n";
         std::string find_latest_image_cmd = "find images/iso-images  -type f -exec ls -t1 {} + | head -1";
@@ -468,7 +457,7 @@ std::string get_tested_vm_link(const std::string &vm_name) {
     } else if (vm_name == "fedora") {
         return "lynx -dump -listonly -nonumbers https://fedoraproject.org/cloud/download | grep -E 'x86_64/.*Generic.*\\.qcow2$'";
     } else if (vm_name == "alpine") {
-        return "lynx -dump -listonly -nonumbers https://alpinelinux.org/cloud/ | grep -E '.qcow2$' | grep x86_64 | grep nocloud | grep bios-tiny-r0 | head -n 1";
+        return "lynx -dump -listonly -nonumbers https://alpinelinux.org/cloud/ | grep -E '.qcow2$' | grep x86_64 | grep bios-cloudinit-r0 | head -n 1";
     } else if (vm_name == "centos") {
         return "lynx -dump -listonly -nonumbers https://cloud.centos.org/centos/9-stream/x86_64/images/ | grep -E '.qcow2$' | sort | tail -n 1";
     } else if (vm_name == "freebsd") {
@@ -542,12 +531,10 @@ void get_tested_vm() {
 }
 
 void create_disk_image() {
-    ship_env.disk_image_path = get_executable_dir() + "images/disk-images/" + ship_env.name + ".qcow2";
+    ship_env.disk_image_path = ship_lib_path + "images/disk-images/" + ship_env.name + ".qcow2";
     std::ifstream check_file(ship_env.disk_image_path);
     if (!check_file.good()) {
         std::cout << "Creating disk image at: " << ship_env.disk_image_path << std::endl;
-
-        ship_env.command = "mkdir -p " + get_executable_dir() + "images/disk-images"; 
 
         std::string create_disk_cmd = "qemu-img create -f qcow2 " + ship_env.disk_image_path + " 1G";
         system_exec(create_disk_cmd);
@@ -725,7 +712,7 @@ void receive_vm_file() {
     std::string set_croc_secret_cmd = "export CROC_SECRET=" + code;
     std::cout << exec(set_croc_secret_cmd) << std::endl;
 
-    std::string source_local = get_executable_dir() + "images/disk-images/";
+    std::string source_local = ship_lib_path + "images/disk-images/";
 
     std::string receive_vm_cmd = "croc recv -o " + source_local;
     std::cout << exec(receive_vm_cmd) << std::endl;

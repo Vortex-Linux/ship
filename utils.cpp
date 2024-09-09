@@ -228,26 +228,11 @@ std::vector<std::string> split_string_by_line(const std::string& str) {
 
 std::string find_settings_file() {
     if (ship_env.mode==ShipMode::CONTAINER){
-        return get_executable_dir() + "settings/container-settings/" + ship_env.name + ".ini";
+        return ship_lib_path + "settings/container-settings/" + ship_env.name + ".ini";
     }else {
-        return get_executable_dir() + "settings/vm-settings/" + ship_env.name + ".ini";
+        return ship_lib_path + "settings/vm-settings/" + ship_env.name + ".ini";
     }
 }
-
-std::string get_executable_dir() {
-    char path[PATH_MAX];
-    ssize_t len = readlink("/proc/self/exe", path, sizeof(path) - 1);
-    if (len != -1) {
-        path[len] = '\0';
-        char* last_slash = strrchr(path, '/');
-        if (last_slash) {
-            last_slash[1] = '\0'; 
-        }
-        return std::string(path);
-    }
-    return std::string();
-}
-
 
 bool is_user_in_group(const std::string& group) {
     std::string command = "id -nG \"$USER\" | grep -qw \"" + group + "\"";
