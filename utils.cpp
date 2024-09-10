@@ -4,8 +4,8 @@ void show_help() {
     std::cout << "./ship [OPTIONS] COMMAND [ARGS...]" << std::endl << std::endl;
     std::cout << "Options:" << std::endl;
     std::cout << "  --help                          Show this help message and exit" << std::endl;
-    std::cout << "  --virtual-machine or -vm        Specify action is for VM" << std::endl;
-    std::cout << "  --container or -ctr             Specify action is for container" << std::endl;
+    std::cout << "  --virtual-machine or --vm        Specify action is for VM" << std::endl;
+    std::cout << "  --container or --ctr             Specify action is for container" << std::endl;
     std::cout << "  --name NAME                     Specifies the name of the container or VM an action should be executed on" << std::endl << std::endl;
 
     std::cout << "Commands:" << std::endl;
@@ -16,6 +16,7 @@ void show_help() {
     std::cout << "      --cpus NUMBER               Set the CPU limit of the VM" << std::endl;
     std::cout << "      --memory or -mem SIZE       Set the memory limit of the VM" << std::endl;
     std::cout << "    start NAME                    Start the specified virtual machine" << std::endl;
+    std::cout << "    restart or reboot NAME        Start the specified virtual machine" << std::endl;
   std::cout << "    delete NAME                   Delete the specified virtual machine" << std::endl;
     std::cout << "    list                          List all virtual machines" << std::endl;
     std::cout << "    view or enter NAME            Shows a console interface or a full GUI of the virtual machine" << std::endl;
@@ -68,10 +69,19 @@ std::string trim_trailing_whitespaces(const std::string& str) {
     return str.substr(first, (last - first + 1));
 }
 
-std::string exec(const char* cmd) {
+void system_exec(const std::string& cmd) {
+    int return_code = system(cmd.c_str());
+
+    if (return_code != 0) {
+        std::cerr << "Failed to execute command: " << cmd << std::endl;
+        std::exit(EXIT_FAILURE);
+    }
+}
+
+std::string exec(const std::string& cmd) {
     std::array<char, 128> buffer;
     std::string result;
-    std::unique_ptr<FILE, int (*)(FILE*)> pipe(popen(cmd, "r"), pclose);
+    std::unique_ptr<FILE, int (*)(FILE*)> pipe(popen(cmd.c_str(), "r"), pclose);
     if (!pipe) {
         throw std::runtime_error("popen() failed!");
     }
@@ -83,19 +93,19 @@ std::string exec(const char* cmd) {
 
 std::string list_vm() {
     std::string cmd = "virsh list --all";
-    std::string result = exec(cmd.c_str());
+    std::string result = exec(cmd);
     return result;
 }
 
 std::string list_container() {
     std::string cmd = "distrobox list";
-    std::string result = exec(cmd.c_str());
+    std::string result = exec(cmd);
     return result;
 }
 
 std::string get_vm_state(const std::string &vm_name) {
-    std::string cmd = "virsh domstate " + vm_name;
-    return exec(cmd.c_str());
+    ship_env.command = "virsh domstate " + vm_name;
+    return trim_trailing_whitespaces(exec(ship_env.command));
 }
 
 std::vector<int> extract_numbers_with_prefix(const std::string& result,const std::string& prefix) {
@@ -105,7 +115,9 @@ std::vector<int> extract_numbers_with_prefix(const std::string& result,const std
     while (getline(stream, line)) {
         size_t pos = line.find(prefix);
         if (pos != std::string::npos) {
-            std::string num_str = line.substr(pos + 2);
+
+            size_t start_pos = pos + prefix.length();
+            std::string num_str = line.substr(start_pos);
             try {
                 int num = stoi(num_str);
                 numbers.push_back(num);
@@ -118,7 +130,7 @@ std::vector<int> extract_numbers_with_prefix(const std::string& result,const std
 }
 
 int get_next_available_number_in_command_output(const std::string& command,const std::string& prefix) {
-    std::string result = exec(command.c_str());
+    std::string result = exec(command);
     std::vector<int> numbers = extract_numbers_with_prefix(result,prefix);
 
     if (numbers.empty()) {
@@ -137,8 +149,8 @@ int get_next_available_vm_number(){
 }
 
 int get_next_available_container_number(){
-    std::string command = "distrobox list | grep vm";
-    std::string prefix = "container";
+    std::string command = "distrobox list | grep container";
+    std::string prefix = "container_";
     int next_container_number = get_next_available_number_in_command_output(command,prefix);
     return next_container_number;
 }
@@ -215,100 +227,13 @@ std::vector<std::string> split_string_by_line(const std::string& str) {
     return tokens;
 }
 
-void send_file() {
-    if(ship_env.mode==ShipMode::CONTAINER) {
-        std::string image = "/tmp/" + ship_env.name;
-
-        std::string make_container_image_cmd = "docker commit " + ship_env.name + " " + ship_env.name;
-        std::cout << exec(make_container_image_cmd.c_str()) << std::endl;
-
-        std::string make_container_tar_file_cmd = "docker save -o " + image + " " + ship_env.name;
-        std::cout << exec(make_container_tar_file_cmd.c_str()) << std::endl;
-
-        std::string send_container_image_cmd = "croc send " + image;
-        std::cout << exec(send_container_image_cmd.c_str()) << std::endl;
-
-        std::string image_cleanup_cmd = "docker rmi " + ship_env.name;
-        std::cout << exec(image_cleanup_cmd.c_str()) << std::endl;
-
-    }else {
-        std::string get_vm_disk_image_cmd = "virsh domblklist " + ship_env.name + " --details | awk '/source file/ {print $3}' | grep '.qcow2$'";
-        std::string result = exec(get_vm_disk_image_cmd.c_str());
-        std::string send_vm_cmd = "croc send " + get_absolute_path(result);
-        std::cout << exec(send_vm_cmd.c_str()) << std::endl;
-    } 
-}
-
-void receive_file() {
-    std::string code;
-    std::cout << "Please type the secret code: ";
-    getline(std::cin, code);
-
-    if(ship_env.mode==ShipMode::CONTAINER) {
-        std::string set_croc_secret_cmd = "export CROC_SECRET=" + code;
-        std::cout << exec(set_croc_secret_cmd.c_str()) << std::endl;
-
-        std::string receive_container_cmd = "croc recv";
-        std::cout << exec(receive_container_cmd.c_str()) << std::endl;
-
-        std::string find_container_image_cmd = "ls -t | head -1";
-        std::string image = exec(find_container_image_cmd.c_str());
-
-        std::string load_container_image_cmd = "docker load -i " + image;
-        std::cout << exec(load_container_image_cmd.c_str()) << std::endl;
-
-        std::string create_container_cmd = "distrobox create --name " + image + " --image " + image;
-        std::cout << exec(create_container_cmd.c_str()) << std::endl;
-
-    }else {
-        ship_env.source_local = get_executable_dir() + "images/disk-images/";
-
-        std::string set_croc_secret_cmd = "export CROC_SECRET=" + code;
-        std::cout << exec(set_croc_secret_cmd.c_str()) << std::endl;
-
-        std::string receive_vm_cmd = "croc recv -o " + ship_env.source_local;
-        std::cout << exec(receive_vm_cmd.c_str()) << std::endl;
-
-        std::string find_vm_image_cmd = "find /images/disk-images/  -type f -exec ls -t1 {} + | head -1";
-        std::string vm_image = exec(find_vm_image_cmd.c_str());
-
-        size_t extension_starting_position = ship_env.source_local.find(".");
-        std::string image_name = ship_env.source_local.substr(0, extension_starting_position);
-
-        std::cout << "Please specify the name of this VM(leaving this blank will set the name to the name given by the sender which is " << image_name << ")";
-        std::string name_given;
-        std::getline(std::cin, name_given);
-        if(!name_given.empty()) {
-            ship_env.name = name_given; 
-        }else {
-            ship_env.name = image_name;
-        }
-        create_vm();
-  }
-}
-
 std::string find_settings_file() {
     if (ship_env.mode==ShipMode::CONTAINER){
-        return get_executable_dir() + "settings/container-settings/" + ship_env.name + ".ini";
+        return ship_lib_path + "settings/container-settings/" + ship_env.name + ".ini";
     }else {
-        return get_executable_dir() + "settings/vm-settings/" + ship_env.name + ".ini";
+        return ship_lib_path + "settings/vm-settings/" + ship_env.name + ".ini";
     }
 }
-
-std::string get_executable_dir() {
-    char path[PATH_MAX];
-    ssize_t len = readlink("/proc/self/exe", path, sizeof(path) - 1);
-    if (len != -1) {
-        path[len] = '\0';
-        char* last_slash = strrchr(path, '/');
-        if (last_slash) {
-            last_slash[1] = '\0'; 
-        }
-        return std::string(path);
-    }
-    return std::string();
-}
-
 
 bool is_user_in_group(const std::string& group) {
     std::string command = "id -nG \"$USER\" | grep -qw \"" + group + "\"";
@@ -320,12 +245,6 @@ void add_user_to_group(const std::string& group) {
         std::cout << "User is not in the " << group << " group." << std::endl;
         std::cout << "Adding user to the " << group << " group..." << std::endl;
         std::string command = "sudo usermod -aG " + group + " $(whoami)";
-        if (system(command.c_str()) == 0) {
-            std::cout << "User successfully added to the " << group << " group." << std::endl;
-            std::cout << "Please log out and log back in for the changes to take effect." << std::endl;
-            exit(0);
-        } else {
-            std::cerr << "Failed to add the user to the " << group << " group." << std::endl;
-        }
+        system_exec(command);
     } 
 }

@@ -1,5 +1,8 @@
 #include "ship.h"
 
+//std::string ship_lib_path = "/var/lib/ship/";
+std::string ship_lib_path = "/home/ship/";
+
 boost::property_tree::ptree pt;
 
 std::ostream& operator<<(std::ostream& os, const ShipMode& mode) {
@@ -29,6 +32,8 @@ std::ostream& operator<<(std::ostream& os, const ShipAction& action) {
             return os << "List";
         case ShipAction::START:
             return os << "Start";
+        case ShipAction::RESTART:
+            return os << "Restart";
         case ShipAction::PAUSE:
             return os << "Pause";
         case ShipAction::STOP:
@@ -128,286 +133,163 @@ ShipEnviornment ship_env = {
 };
 
 void process_operands(int argc, char *argv[]) {
-    bool fetching_command = false;
-    bool fetching_name = false;
-    bool fetching_packages = false;
-    bool fetching_source = false;
-    bool fetching_local_source = false;
-    bool fetching_image = false;
-    bool fetching_cpu_limit = false;
-    bool fetching_memory_limit = false;
-    int action_index = INT_MAX;
+    namespace po = boost::program_options;
 
+    po::options_description desc("Allowed options");
+    desc.add_options()
+        ("help,h", "Show help message")
+        ("container,ctr", "Set mode to CONTAINER")
+        ("virtual-machine,vm", "Set mode to VM")
+        ("name", po::value<std::string>(), "Set name")
+        ("source", po::value<std::string>(), "Set source")
+        ("source-local", po::value<std::string>(), "Set local source")
+        ("image", po::value<std::string>(), "Set image")
+        ("cpus", po::value<std::string>(), "Set CPU limit")
+        ("memory,mem", po::value<std::string>(), "Set memory limit")
+        ("command", po::value<std::string>(), "Set command")
+        ("packages", po::value<std::vector<std::string>>()->multitoken(), "Set packages")
+        ("aur", "Set package manager to pacman")
+        ("apk", "Set package manager to apk")
+        ("dnf", "Set package manager to dnf")
+        ("apt", "Set package manager to apt")
+        ("nix", "Set package manager to nix")
+        ("parameters,p", po::value<std::string>(), "Set additional parameters");
 
-    for (int i = 1; i < argc; ++i) {
-        if (fetching_command) {
-            for (int j=i+1;j<argc;j++) {
-                ship_env.command = ship_env.command +  " " + argv[j];
-            }
-            break;
-        }
+    po::positional_options_description positional;
+    positional.add("action", 1);
+    positional.add("name", 1);
 
-        if (fetching_name) {
-            ship_env.name = argv[i];
-            fetching_name = false;
-            
-            if (ship_env.action == ShipAction::EXEC) {
-                fetching_command = true;
-            }
-            continue;
-        }
+    po::options_description hidden("Hidden options");
+    hidden.add_options()
+        ("action", po::value<std::string>(), "Action");
 
-        if (fetching_packages) {
-            for (int j=i;j<argc;j++) {
-                if (strcmp(argv[j], "--parameters") == 0 || strcmp(argv[j], "-p") == 0) {
-                    i = j;
-                    break;
-                }
-                ship_env.packages += argv[j];
-            }
-            if (strcmp(argv[i], "--parameters") != 0 || strcmp(argv[i], "-p") != 0) {
-                break;
-            }
-        }
+    po::options_description all;
+    all.add(desc).add(hidden);
 
-        if (fetching_source) {
-            ship_env.source = argv[i];
-            ship_env.source_local = "";
-            fetching_source = false;
-            continue;
-        }
+    po::variables_map vm;
+    try {
+        po::store(po::command_line_parser(argc, argv).options(all).positional(positional).run(), vm);
+        po::notify(vm);
+    } catch (const po::error &ex) {
+        std::cout << ex.what() << "\n";
+        return;
+    }
 
-        if (fetching_local_source) {
-            ship_env.source_local = argv[i];
-            ship_env.source = "";
-            fetching_local_source = false;
-            continue;
-        }
+    if (vm.count("help")) {
+        show_help();
+        exit(0);
+    }
 
-        if (fetching_image) {
-            ship_env.image = argv[i];
-            fetching_image = false;
-            continue;
-        }
+    if (vm.count("container")) {
+        ship_env.mode = ShipMode::CONTAINER;
+    } else if (vm.count("virtual-machine")) {
+        ship_env.mode = ShipMode::VM;
+    }
 
-        if (fetching_cpu_limit) {
-            ship_env.cpu_limit = argv[i];
-            fetching_cpu_limit = false;
-            continue;
-        }
-
-        if (fetching_memory_limit) {
-            ship_env.memory_limit = argv[i];
-            fetching_memory_limit = false;
-            continue;
-        }
-
-        if (strcmp(argv[i], "--help") == 0) {
-            show_help();
-            exit(0);
-        }
-
-        if (strcmp(argv[i], "--container") == 0 || strcmp(argv[i], "-ctr") == 0) {
-            ship_env.mode = ShipMode::CONTAINER;
-            continue;
-        }
-
-        if (strcmp(argv[i], "--virtual-machine") == 0 || strcmp(argv[i], "-vm") == 0 ) {
-            ship_env.mode = ShipMode::VM;
-            continue;
-        }
-
-        if (strcmp(argv[i], "create") == 0 && ship_env.action == ShipAction::UNKNOWN) {
+    if (vm.count("action")) {
+        std::string action = vm["action"].as<std::string>();
+        if (action == "create") {
             ship_env.action = ShipAction::CREATE;
-            action_index = i;
-            continue;
-        }
-
-        if (strcmp(argv[i], "--name") == 0 && action_index!=INT_MAX) {
-            fetching_name = true;
-            continue;
-        }
-
-        if (strcmp(argv[i], "--source") == 0 && ship_env.action== ShipAction::CREATE) {
-            fetching_source = true;
-            continue;
-        }
-
-        if (strcmp(argv[i], "--source-local") == 0 && ship_env.action==ShipAction::CREATE) {
-            fetching_local_source = true;
-            continue;
-        }
-
-        if (strcmp(argv[i], "--image") == 0) {
-            fetching_image = true;
-            continue;
-        }
-
-        if (strcmp(argv[i], "--cpus") == 0 && ship_env.action==ShipAction::CREATE) {
-            fetching_cpu_limit = true;
-            continue;
-        }
-
-        if ((strcmp(argv[i], "--memory") == 0 || strcmp(argv[i], "--mem") == 0) && ship_env.action==ShipAction::CREATE) {
-            fetching_memory_limit = true;
-            continue;
-        }
-
-        if (strcmp(argv[i], "start") == 0 && ship_env.action == ShipAction::UNKNOWN) {
+        } else if (action == "start") {
             ship_env.action = ShipAction::START;
-            action_index = i;
-            continue;
-        }
-
-        if (strcmp(argv[i], "delete") == 0 && ship_env.action == ShipAction::UNKNOWN) {
+        } else if (action == "restart" || action == "reboot") {
+            ship_env.action = ShipAction::RESTART;
+        } else if (action == "delete") {
             ship_env.action = ShipAction::DELETE;
-            action_index = i;
-            continue;
-        }
-
-        if (strcmp(argv[i], "list") == 0 && ship_env.action == ShipAction::UNKNOWN) {
+        } else if (action == "list") {
             ship_env.action = ShipAction::LIST;
-            action_index = i;
-            continue;
-        }
-
-        if ((strcmp(argv[i], "view") == 0 || strcmp(argv[i], "enter") == 0)&& ship_env.action == ShipAction::UNKNOWN) {
+        } else if (action == "view" || action == "enter") {
             ship_env.action = ShipAction::VIEW;
-            action_index = i;
-            continue;
-        }
-
-        if (strcmp(argv[i], "view") == 0 && ship_env.action == ShipAction::UNKNOWN) {
-            ship_env.action = ShipAction::VIEW;
-            action_index = i;
-            continue;
-        }
-
-        if (strcmp(argv[i], "save") == 0 && ship_env.action == ShipAction::UNKNOWN) {
+        } else if (action == "save") {
             ship_env.action = ShipAction::SAVE;
-            action_index = i;
-            continue;
-        }
-
-        if (strcmp(argv[i], "shutdown") == 0 && ship_env.action == ShipAction::UNKNOWN) {
+        } else if (action == "shutdown") {
             ship_env.action = ShipAction::SHUTDOWN;
-            action_index = i;
-            continue;
-        }
-
-        if (strcmp(argv[i], "stop") == 0 && ship_env.action == ShipAction::UNKNOWN) {
+        } else if (action == "stop") {
             ship_env.action = ShipAction::STOP;
-            action_index = i;
-            continue;
-        }
-
-        if ((strcmp(argv[i], "pause") == 0 || strcmp(argv[i], "suspend") == 0) && ship_env.action == ShipAction::UNKNOWN) {
+        } else if (action == "pause" || action == "suspend") {
             ship_env.action = ShipAction::PAUSE;
-            action_index = i;
-            continue;
-        }
-
-        if (strcmp(argv[i], "resume") == 0 && ship_env.action == ShipAction::UNKNOWN) {
+        } else if (action == "resume") {
             ship_env.action = ShipAction::RESUME;
-            action_index = i;
-            continue;
-        }
-
-        if (strcmp(argv[i], "upgrade") == 0 && ship_env.action == ShipAction::UNKNOWN) {
+        } else if (action == "upgrade") {
             ship_env.action = ShipAction::UPGRADE;
-            action_index = i;
-            continue;
-        }
-
-        if ((strcmp(argv[i], "exec") == 0 || strcmp(argv[i], "run") == 0) && ship_env.action == ShipAction::UNKNOWN) {
+        } else if (action == "exec" || action == "run") {
             ship_env.action = ShipAction::EXEC;
-            action_index = i;
-            continue;
-        }
-
-        if ((strcmp(argv[i], "package_download") == 0 || strcmp(argv[i], "download_packages") == 0 ) && ship_env.action == ShipAction::UNKNOWN) {
+        } else if (action == "package_download" || action == "download_packages") {
             ship_env.action = ShipAction::PACKAGE_DOWNLOAD;
-            action_index = i;
-            continue;
-        }
-
-        if ((strcmp(argv[i], "package_remove") == 0 || strcmp(argv[i], "remove_packages") == 0 )&& ship_env.action == ShipAction::UNKNOWN) {
+        } else if (action == "package_remove" || action == "remove_packages") {
             ship_env.action = ShipAction::PACKAGE_REMOVE;
-            action_index = i;
-            continue;
-        }
-
-        if ((strcmp(argv[i], "package_search") == 0 || strcmp(argv[i], "search_packages") == 0 )&& ship_env.action == ShipAction::UNKNOWN) {
+        } else if (action == "package_search" || action == "search_packages") {
             ship_env.action = ShipAction::PACKAGE_SEARCH;
-            action_index = i;
-            continue;
-        }
-
-        if ((strcmp(argv[i], "receive") == 0 && ship_env.action == ShipAction::UNKNOWN)) {
+        } else if (action == "receive") {
             ship_env.action = ShipAction::RECEIVE;
-            action_index = i;
-            continue;
-        }
-
-        if ((strcmp(argv[i], "send") == 0 && ship_env.action == ShipAction::UNKNOWN)) {
+        } else if (action == "send") {
             ship_env.action = ShipAction::SEND;
-            action_index = i;
-            continue;
-        }
-
-        if (strcmp(argv[i], "--command") == 0 && ship_env.action == ShipAction::EXEC) {
-            fetching_command = true;
-            continue;
-        }
-
-        if ((strcmp(argv[i], "--parameters") == 0 || strcmp(argv[i], "-p") == 0 )) {
-            fetching_command = true;
-            continue;
-        }
-
-        if (strcmp(argv[i], "--packages") == 0) {
-            fetching_packages = true;
-            continue;
-        }
-
-        if (strcmp(argv[i], "--aur") == 1 && strcmp(argv[i], "-aur") == 0) {
-            ship_env.package_manager_name = "pacman";
-            continue;
-        }
-
-        if (strcmp(argv[i], "--apk") == 1 && strcmp(argv[i], "-aur") == 0) {
-            ship_env.package_manager_name = "pacman";
-            continue;
-        }
-
-        if (strcmp(argv[i], "--dnf") == 0 && strcmp(argv[i], "-dnf") == 0) {
-            ship_env.package_manager_name = "dnf";
-            continue;
-        }
-
-        if (strcmp(argv[i], "--apt") == 0 && strcmp(argv[i], "-apt") == 0) {
-            ship_env.package_manager_name = "apt";
-            continue;
-        }
-
-        if (strcmp(argv[i], "--nix") == 0 && strcmp(argv[i], "-nix") == 0) {
-            ship_env.package_manager_name = "nix";
-            continue;
-        }
-
-        if (i - 1 == action_index) {
-            ship_env.name = argv[i];
-            continue;
-        }
-
-        if (ship_env.action == ShipAction::UNKNOWN) {
-            std::cout << "Ship found unknown operand " << argv[i] << " for entity " << ship_env.mode << "\n";
-            std::cout << "For more information try ship --help\n";
         } else {
-            std::cout << "Ship found unknown operand " << argv[i] << " for action " << ship_env.action << "\n";
+            std::cout << "Ship found unknown operand " << action << " for entity " << ship_env.mode << "\n";
+            std::cout << "For more information try ship --help\n";
+            exit(1);
         }
+    }
 
-        exit(1);
+    if (vm.count("name")) {
+        ship_env.name = vm["name"].as<std::string>();
+    }
+
+    if (vm.count("source")) {
+        ship_env.source = vm["source"].as<std::string>();
+        ship_env.source_local = "";
+    }
+
+    if (vm.count("source-local")) {
+        ship_env.source_local = vm["source-local"].as<std::string>();
+        ship_env.source = "";
+    }
+
+    if (vm.count("image")) {
+        ship_env.image = vm["image"].as<std::string>();
+    }
+
+    if (vm.count("cpus")) {
+        ship_env.cpu_limit = vm["cpus"].as<std::string>();
+    }
+
+    if (vm.count("memory")) {
+        ship_env.memory_limit = vm["memory"].as<std::string>();
+    }
+
+    if (vm.count("command")) {
+        ship_env.command = vm["command"].as<std::string>();
+    }
+
+    if (vm.count("parameters")) {
+        ship_env.command += " " + vm["parameters"].as<std::string>();
+    }
+
+    if (vm.count("packages")) {
+        auto packages = vm["packages"].as<std::vector<std::string>>();
+        for (const auto &pkg : packages) {
+            ship_env.packages += pkg + " ";
+        }
+    }
+
+    if (vm.count("aur")) {
+        ship_env.package_manager_name = "pacman";
+    }
+
+    if (vm.count("apk")) {
+        ship_env.package_manager_name = "apk";
+    }
+
+    if (vm.count("dnf")) {
+        ship_env.package_manager_name = "dnf";
+    }
+
+    if (vm.count("apt")) {
+        ship_env.package_manager_name = "apt";
+    }
+
+    if (vm.count("nix")) {
+        ship_env.package_manager_name = "nix";
     }
 }
 

@@ -5,7 +5,7 @@ void pass_password_to_tmux() {
 
     sleep(1);
 
-    while (exec((capture_tmux_last_line_cmd.c_str())).find("password for") != std::string::npos) {
+    while (exec((capture_tmux_last_line_cmd)).find("password for") != std::string::npos) {
         std::cout << "Please provide your root password: ";     
         std::string root_password;     
         std::getline(std::cin, root_password); 
@@ -20,7 +20,7 @@ void pass_password_to_tmux() {
 void wait_for_vm_ready() {
     while(true) {
         std::string capture_tmux_last_line_cmd = "tmux capture-pane -p -S -1 -t " + ship_env.name + " | tail -n 1";
-        std::string output = exec(capture_tmux_last_line_cmd.c_str());
+        std::string output = exec(capture_tmux_last_line_cmd);
 
         output = trim_trailing_whitespaces(output);
 
@@ -34,16 +34,16 @@ void wait_for_vm_ready() {
 void run_startup_commands() {
     boost::property_tree::ini_parser::read_ini(find_settings_file(), pt);
 
-    bool system_commands_left = true;
+    bool system_exec_commands_left = true;
     bool exec_commands_left = true;
     int current_command_number = 1;
 
-    while(system_commands_left || exec_commands_left) {
+    while(system_exec_commands_left || exec_commands_left) {
         try {
-            ship_env.command = pt.get<std::string>("system.command_" + std::to_string(current_command_number));
+            ship_env.command = pt.get<std::string>("system_exec.command_" + std::to_string(current_command_number));
             system_command_vm();
         } catch(const boost::property_tree::ptree_bad_path&) {
-            system_commands_left = false;
+            system_exec_commands_left = false;
         }
 
         sleep(1);
@@ -63,19 +63,22 @@ void run_startup_commands() {
 
 void start_vm() {
     std::string load_saved_cmd = "virsh snapshot-revert --current " + ship_env.name;
-    exec(load_saved_cmd.c_str());
+    exec(load_saved_cmd);
 
     std::string state = get_vm_state(ship_env.name);
 
     if (state.find("running") == std::string::npos) {
           std::string start_cmd = "virsh start " + ship_env.name;
-          exec(start_cmd.c_str());
+          exec(start_cmd);
     }
 
     std::cout << "VM " << ship_env.name << " started successfully.\n";
 
-    std::string create_tmux_session_cmd = "tmux new -d -s" + ship_env.name;
-    system(create_tmux_session_cmd.c_str());
+    ship_env.command = "tmux has-session -t " + ship_env.name + " && tmux kill-session -t " + ship_env.name + " || true";
+    system_exec(ship_env.command);
+
+    std::string create_tmux_session_cmd = "tmux new -d -s " + ship_env.name;
+    system_exec(create_tmux_session_cmd);
 
     ship_env.command = "virsh console " + ship_env.name;
     system_command_vm();
@@ -87,14 +90,19 @@ void start_vm() {
     run_startup_commands();
 }
 
+void restart_vm() {
+    shutdown_vm();
+    start_vm();
+}
+
 void view_vm_console() {
     std::string view_cmd = "tmux attach-session -t " + ship_env.name;      
-    system(view_cmd.c_str());
+    system_exec(view_cmd);
 }
 
 void view_vm_gui() {
     std::string view_cmd = "virt-viewer " + ship_env.name; 
-    system(view_cmd.c_str());
+    system_exec(view_cmd);
 }
 
 void view_vm() {
@@ -111,17 +119,17 @@ void view_vm() {
 
 void pause_vm() {
     std::string view_cmd = "virsh suspend " + ship_env.name; 
-    system(view_cmd.c_str());
+    system_exec(view_cmd);
 }
 
 void resume_vm() {
     std::string view_cmd = "virsh resume " + ship_env.name; 
-    system(view_cmd.c_str());
+    system_exec(view_cmd);
 }
 
 void delete_old_snapshots() {
     std::string list_snapshot_cmd = "virsh snapshot-list --name " + ship_env.name;
-    std::string snapshot_list = exec(list_snapshot_cmd.c_str());
+    std::string snapshot_list = exec(list_snapshot_cmd);
     std::vector<std::string> snapshots = split_string_by_line(snapshot_list);
 
     std::reverse(snapshots.begin(), snapshots.end());
@@ -132,7 +140,7 @@ void delete_old_snapshots() {
         if (snapshot != latest_snapshot) {
             std::cout << "Deleting old snapshot: " << snapshot << std::endl;
             std::string delete_cmd = "virsh snapshot-delete " + ship_env.name + " " + snapshot;
-            system(delete_cmd.c_str());
+            system_exec(delete_cmd);
         }
     }
 
@@ -141,16 +149,28 @@ void delete_old_snapshots() {
 
 void save_vm() {
     std::string save_cmd = "virsh snapshot-create --atomic " + ship_env.name; 
-    system(save_cmd.c_str());
+    system_exec(save_cmd);
 
     delete_old_snapshots();
 }
 
 void shutdown_vm() {
+    std::string state = get_vm_state(ship_env.name);
+    if (state.find("running") == std::string::npos && state.find("paused") == std::string::npos) {
+        std::cout << "The vm is already in a shut-off state" << std::endl;
+
+        if (ship_env.action == ShipAction::RESTART) {
+            std::cout << "Cancelling the restart proccess" << std::endl;
+            exit(EXIT_FAILURE);
+        }
+
+        return;
+    }
+
     std::string shutdown_cmd = "virsh shutdown " + ship_env.name; 
-    system(shutdown_cmd.c_str()); 
+    system_exec(shutdown_cmd); 
     
-    std::string shutdown_signal = "virsh --event lifecycle --timeout 5 " + ship_env.name;
+    std::string shutdown_signal = "virsh event --event lifecycle --timeout 5 " + ship_env.name;
     bool timeout = system(shutdown_signal.c_str());
     if (timeout) {
         std::cout << "The VM isnt responding do you want to forcefully shutdown the vm ? (y/n): ";
@@ -164,14 +184,14 @@ void shutdown_vm() {
 
         std::cout << "Forcefully shutting down " << ship_env.name << ".\n";
         std::string shutdown_cmd = "virsh destroy " + ship_env.name + "\n";
-        system(shutdown_cmd.c_str());
+        system_exec(shutdown_cmd);
     }
-    std::cout << "Successfully shutdown " << ship_env.name; 
+    std::cout << "Successfully shutdown " << ship_env.name << std::endl; 
 }
 
 std::string get_vm_image_paths() {
     ship_env.command = "virsh domblklist " + ship_env.name + " --details | awk '{print $4}' | tail -n +3 | head -n -1";
-    std::string image_paths = exec(ship_env.command.c_str());
+    std::string image_paths = exec(ship_env.command);
     return image_paths;
 }
 
@@ -185,11 +205,11 @@ void clean_vm_resources() {
     while (std::getline(stream, image_path)) {
         std::cout << "Deleting " << image_path << std::endl;
         ship_env.command = "rm " + image_path;
-        system(ship_env.command.c_str());
+        system_exec(ship_env.command);
     }
 
-    ship_env.command = "rm " + get_executable_dir() + "settings/vm-settings/" + ship_env.name + ".ini";
-    system(ship_env.command.c_str());
+    ship_env.command = "rm " + ship_lib_path + "settings/vm-settings/" + ship_env.name + ".ini";
+    system_exec(ship_env.command);
 
     std::cout << "Successfully deleted all resources which are not needed anymore." << std::endl;;
 }
@@ -197,15 +217,15 @@ void clean_vm_resources() {
 void delete_vm() {
     std::string state = get_vm_state(ship_env.name);
     if (state.find("running") != std::string::npos || state.find("paused") != std::string::npos) {
-        std::cout << "Forcefully shutting down VM " << ship_env.name << " before deletion.\n";
+        std::cout << "forcefully shutting down vm " << ship_env.name << " before deletion.\n";
         std::string shutdown_cmd = "virsh destroy " + ship_env.name;
-        system(shutdown_cmd.c_str());
+        system_exec(shutdown_cmd);
     }
 
     clean_vm_resources();
 
     std::string undefine_cmd = "virsh undefine --nvram " + ship_env.name;
-    exec(undefine_cmd.c_str());
+    exec(undefine_cmd);
     std::cout << "VM " << ship_env.name << " deleted successfully.\n";
 
 }
@@ -249,7 +269,7 @@ void create_vm() {
         if (extension == ".iso") {
             ship_env.iso_path = get_absolute_path(ship_env.source_local);
             create_disk_image();
-        }else if (extension == ".qcow2" || extension == ".qcow") {
+        }else if (extension == ".qcow2" || extension == ".qcow" || extension == ".img") {
             ship_env.disk_image_path = get_absolute_path(ship_env.source_local);
         }
     }
@@ -279,6 +299,7 @@ std::string generate_vm_xml() {
     <type arch='x86_64' machine='pc-i440fx-2.9'>hvm</type>
     <boot dev='hd'/>
     <boot dev='cdrom'/>
+    <kernel commandLine="quiet loglevel=0"/>
   </os>
   <features>
     <acpi/>
@@ -335,11 +356,19 @@ std::string generate_vm_xml() {
     <memballoon model='virtio'/>
 )";
     switch(ship_env.os) {
-        case TestedVM::tails:
-            break;
-        case TestedVM::whonix:
-            break;
+        case TestedVM::gentoo:
+        case TestedVM::ubuntu:
+        case TestedVM::fedora:
+        case TestedVM::freebsd:
+        case TestedVM::openbsd:
+        case TestedVM::netbsd:
+        case TestedVM::dragonflybsd:
+        case TestedVM::windows:
         case TestedVM::debian:
+        case TestedVM::centos:
+        case TestedVM::alpine:
+        case TestedVM::whonix:
+        case TestedVM::tails:
             vm_xml << R"(
       <console type='pty'>
         <target type='virtio'/>
@@ -349,32 +378,12 @@ std::string generate_vm_xml() {
       </serial>
             )";
             break;
-        case TestedVM::ubuntu:
-            break;
         case TestedVM::arch:
             vm_xml << R"(
       <console type='pty'>
         <target type='virtio'/>
       </console>
             )";
-            break;
-        case TestedVM::gentoo:
-            break;
-        case TestedVM::fedora:
-            break;
-        case TestedVM::alpine:
-            break;
-        case TestedVM::centos:
-            break;
-        case TestedVM::freebsd:
-            break;
-        case TestedVM::openbsd:
-            break;
-        case TestedVM::netbsd:
-            break;
-        case TestedVM::dragonflybsd:
-            break;
-        case TestedVM::windows:
             break;
         default:
             break;
@@ -391,15 +400,15 @@ std::string generate_vm_xml() {
     xml_file << vm_xml.str();
     xml_file.close();
 
-    ship_env.command = "touch " + get_executable_dir() + "settings/vm-settings/" + ship_env.name + ".ini";
-    system(ship_env.command.c_str());
+    ship_env.command = "touch " + ship_lib_path + "settings/vm-settings/" + ship_env.name + ".ini";
+    system_exec(ship_env.command);
 
     return xml_filename;
 }
 
 void define_vm(const std::string& xml_filename) {
     std::string define_cmd = "virsh define " + xml_filename;
-    exec(define_cmd.c_str());
+    exec(define_cmd);
 
     std::cout << "New VM configuration defined.\n";
 }
@@ -421,12 +430,104 @@ void start_vm_with_confirmation_prompt() {
 void get_iso_source() {
     if(!ship_env.source.empty()) {
         std::cout << "Downloading iso to images" << "\n";
-        std::string download_cmd = "aria2c --dir " + get_executable_dir() + "images/iso-images " + ship_env.source;
-        system(download_cmd.c_str());
+        std::string download_cmd = "aria2c --dir " + ship_lib_path + "images/iso-images " + ship_env.source;
+        system_exec(download_cmd);
         std::cout << "Finding the path to the downloaded iso image" << "\n";
-        std::string find_latest_image_cmd = "find images/iso-images  -type f -exec ls -t1 {} + | head -1";
-        ship_env.source_local = exec(find_latest_image_cmd.c_str());
+        std::string find_latest_image_cmd = "find " + ship_lib_path + "images/iso-images  -type f -exec ls -t1 {} + | head -1";
+        ship_env.source_local = exec(find_latest_image_cmd);
         std::cout << "Found the path as " << ship_env.source_local << "\n";
+    }
+}
+void print_available_tested_vms() {
+    std::cout << "The available tested and configured vms are: " << std::endl;
+    std::cout << "tails" << std::endl;
+    std::cout << "whonix" << std::endl;
+    std::cout << "debian" << std::endl;
+    std::cout << "ubuntu" << std::endl;
+    std::cout << "arch" << std::endl;
+    std::cout << "gentoo" << std::endl;
+    std::cout << "fedora" << std::endl;
+    std::cout << "centos" << std::endl;
+    std::cout << "alpine" << std::endl;
+    std::cout << "freebsd" << std::endl;
+    std::cout << "openbsd" << std::endl;
+    std::cout << "netbsd" << std::endl;
+    std::cout << "dragonflybsd" << std::endl;
+    std::cout << "windows" << std::endl;
+
+}
+
+std::string get_tested_vm_link(const std::string &vm_name) {
+    std::cout << ship_env.source << std::endl;
+    if (vm_name == "tails") {
+        return "lynx -dump -listonly -nonumbers https://mirrors.edge.kernel.org/tails/stable/ | grep https://mirrors.edge.kernel.org/tails/stable/tails-amd64 | xargs -I {} lynx -dump -listonly -nonumbers '{}' | grep -E 'iso$' | grep -v '\\.sig$'";
+    } else if (vm_name == "whonix") {
+        return "lynx -dump -listonly -nonumbers https://www.whonix.org/wiki/KVM | grep -E '.qcow2$'";
+    } else if (vm_name == "debian") {
+        return "echo https://cdimage.debian.org/images/cloud/bookworm/latest/debian-12-nocloud-amd64.qcow2";
+    } else if (vm_name == "ubuntu") {
+        return "lynx -dump -listonly -nonumbers https://cloud-images.ubuntu.com/releases | grep -E 'cloud-images.ubuntu.com/releases/[0-9]+(\\.[0-9]+)+/?$' | sort -V | tail -n 1 | awk '{print $0 \"/release/\"}' | xargs -I {} lynx -dump -listonly -nonumbers '{}' | grep -E 'amd64.img$'";
+    } else if (vm_name == "arch") {
+        return "echo https://geo.mirror.pkgbuild.com/images/latest/Arch-Linux-x86_64-basic.qcow2";
+    } else if (vm_name == "gentoo") {
+        return "lynx -dump -listonly -nonumbers https://gentoo.osuosl.org/experimental/amd64/openstack/ | grep -E 'default.*\\.qcow2$' | grep -v 'nomultilib' | grep 'latest.qcow2$'";
+    } else if (vm_name == "fedora") {
+        return "lynx -dump -listonly -nonumbers https://fedoraproject.org/cloud/download | grep -E 'x86_64/.*Generic.*\\.qcow2$'";
+    } else if (vm_name == "alpine") {
+        return "lynx -dump -listonly -nonumbers https://alpinelinux.org/cloud/ | grep -E '.qcow2$' | grep x86_64 | grep bios-cloudinit-r0 | head -n 1";
+    } else if (vm_name == "centos") {
+        return "lynx -dump -listonly -nonumbers https://cloud.centos.org/centos/9-stream/x86_64/images/ | grep -E '.qcow2$' | sort | tail -n 1";
+    } else if (vm_name == "freebsd") {
+        return "lynx -dump -listonly -nonumbers https://bsd-cloud-image.org | grep freebsd | grep -E 'zfs.*\\.qcow2$' | sort -V | tail -n 1";
+    } else if (vm_name == "openbsd") {
+        return "lynx -dump -listonly -nonumbers https://bsd-cloud-image.org | grep openbsd | grep -E '.qcow2$' | sort -V | tail -n 1";
+    } else if (vm_name == "netbsd") {
+        return "lynx -dump -listonly -nonumbers https://bsd-cloud-image.org | grep netbsd | grep -E '.qcow2$' | sort -V | tail -n 1";
+    } else if (vm_name == "dragonflybsd") {
+        return "lynx -dump -listonly -nonumbers https://bsd-cloud-image.org | grep dragonflybsd | grep -E 'hammer2.*\\.qcow2$' | sort -V | tail -n 1";
+    } else if (vm_name == "windows") {
+        return "echo https://cloudbase.it/euladownload.php?h=kvm";
+    }
+    return "";
+}
+
+void set_tested_vm(const std::string &vm_name) {
+    if (vm_name == "tails") {
+        ship_env.os = TestedVM::tails;
+    } else if (vm_name == "whonix") {
+        ship_env.os = TestedVM::whonix;
+    } else if (vm_name == "debian") {
+        ship_env.os = TestedVM::debian;
+    } else if (vm_name == "ubuntu") {
+        ship_env.os = TestedVM::ubuntu;
+    } else if (vm_name == "arch") {
+        ship_env.os = TestedVM::arch;
+    } else if (vm_name == "gentoo") {
+        ship_env.os = TestedVM::gentoo;
+    } else if (vm_name == "fedora") {
+        ship_env.os = TestedVM::fedora;
+    } else if (vm_name == "alpine") {
+        ship_env.os = TestedVM::alpine;
+    } else if (vm_name == "centos") {
+        ship_env.os = TestedVM::centos;
+    } else if (vm_name == "freebsd") {
+        ship_env.os = TestedVM::freebsd;
+    } else if (vm_name == "openbsd") {
+        ship_env.os = TestedVM::openbsd;
+    } else if (vm_name == "netbsd") {
+        ship_env.os = TestedVM::netbsd;
+    } else if (vm_name == "dragonflybsd") {
+        ship_env.os = TestedVM::dragonflybsd;
+    } else if (vm_name == "windows") {
+        ship_env.os = TestedVM::windows;
+    } else {
+        std::cout << "The specified vm is not available as a tested and configured vm" << std::endl;
+        return;
+    }
+
+    std::string vm_link_cmd = get_tested_vm_link(vm_name);
+    if (!vm_link_cmd.empty()) {
+        ship_env.source = exec(vm_link_cmd);
     }
 }
 
@@ -434,96 +535,26 @@ void get_tested_vm() {
     while (true) {
         std::cout << "Please specify a vm from our tested and configured vms(use help to get the list of the available configured vms): ";
         std::getline(std::cin, ship_env.source);
+
         if (ship_env.source == "help") {
-            std::cout << "The available tested and configured vms are: " << std::endl;
-            std::cout << "tails" << std::endl;
-            std::cout << "whonix" << std::endl;
-            std::cout << "debian" << std::endl;
-            std::cout << "ubuntu" << std::endl;
-            std::cout << "arch" << std::endl;
-            std::cout << "gentoo" << std::endl;
-            std::cout << "fedora" << std::endl;
-            std::cout << "centos" << std::endl;
-            std::cout << "alpine" << std::endl;
-            std::cout << "freebsd" << std::endl;
-            std::cout << "openbsd" << std::endl;
-            std::cout << "netbsd" << std::endl;
-            std::cout << "dragonflybsd" << std::endl;
-            std::cout << "windows" << std::endl;
-        }else {
-            if (strcmp(ship_env.source.c_str(), "tails") == 0) {
-                ship_env.os = TestedVM::tails; 
-                std::string find_image_folder_link_cmd = "lynx -dump -listonly -nonumbers https://mirrors.edge.kernel.org/tails/stable/ | grep https://mirrors.edge.kernel.org/tails/stable/tails-amd64";
-                ship_env.source = trim_trailing_whitespaces(exec(find_image_folder_link_cmd.c_str()));
-                std::string find_image_file_link_cmd = "lynx -dump -listonly -nonumbers " + ship_env.source + " | grep -E 'iso$' | grep -v '\\.sig$'";
-                ship_env.source = exec(find_image_file_link_cmd.c_str());
-
-            }else if (strcmp(ship_env.source.c_str(), "whonix") == 0) {
-                ship_env.os = TestedVM::whonix; 
-                std::string find_image_file_link_cmd = "lynx -dump -listonly -nonumbers https://www.whonix.org/wiki/KVM | grep -E '.qcow2$'";
-                ship_env.source = exec(find_image_file_link_cmd.c_str());
-
-            }else if (strcmp(ship_env.source.c_str(), "debian") == 0) {
-                ship_env.os = TestedVM::debian; 
-                ship_env.source = "https://cdimage.debian.org/images/cloud/bookworm/latest/debian-12-nocloud-amd64.qcow2";
-            }else if (strcmp(ship_env.source.c_str(), "ubuntu") == 0) {
-                ship_env.os = TestedVM::ubuntu; 
-                std::string find_image_file_link_cmd = "lynx -dump -listonly -nonumbers https://cloud-images.ubuntu.com/noble/current/ |  grep -E 'amd64.*\\.img$'";
-                ship_env.source = ship_env.source = exec(find_image_file_link_cmd.c_str());
-            }else if (strcmp(ship_env.source.c_str(), "arch") == 0) {
-                ship_env.os = TestedVM::arch; 
-                ship_env.source = "https://geo.mirror.pkgbuild.com/images/latest/Arch-Linux-x86_64-basic.qcow2";
-            }else if (strcmp(ship_env.source.c_str(), "gentoo") == 0) {
-                ship_env.os = TestedVM::gentoo; 
-                std::string find_image_file_link_cmd = "lynx -dump -listonly -nonumbers https://gentoo.osuosl.org/experimental/amd64/openstack/ | grep -E 'default.*\\.qcow2$' | grep -v 'nomultilib' | grep 'latest.qcow2$'";
-                ship_env.source = ship_env.source = exec(find_image_file_link_cmd.c_str());
-            }else if (strcmp(ship_env.source.c_str(), "fedora") == 0) {
-                ship_env.os = TestedVM::fedora;
-                std::string find_image_file_link_cmd = "lynx -dump -listonly -nonumbers https://fedoraproject.org/cloud/download | grep -E 'x86_64/.*Generic.*\\.qcow2$'";
-                ship_env.source = ship_env.source = exec(find_image_file_link_cmd.c_str());
-            }else if (strcmp(ship_env.source.c_str(), "alpine") == 0) {
-                ship_env.os = TestedVM::alpine; 
-                std::string find_image_file_link_cmd = "lynx -dump -listonly -nonumbers  https://alpinelinux.org/cloud/ | grep -E '.qcow2$' | grep x86_64 | grep nocloud | grep bios-tiny-r0 | head -n 1";
-                ship_env.source = ship_env.source = exec(find_image_file_link_cmd.c_str());
-            }else if (strcmp(ship_env.source.c_str(), "centos") == 0) {
-                ship_env.os = TestedVM::centos; 
-                std::string find_image_file_link_cmd = "lynx -dump -listonly -nonumbers https://cloud.centos.org/centos/9-stream/x86_64/images/ | grep -E '.qcow2$' | sort | tail -n 1"; 
-                ship_env.source = ship_env.source = exec(find_image_file_link_cmd.c_str());
-            }else if (strcmp(ship_env.source.c_str(), "freebsd") == 0) {
-                ship_env.os = TestedVM::freebsd; 
-                std::string find_image_file_link_cmd = "lynx -dump -listonly -nonumbers https://bsd-cloud-image.org | grep freebsd | grep -E 'zfs.*\\.qcow2$' | sort -V | tail -n 1"; 
-                ship_env.source = ship_env.source = exec(find_image_file_link_cmd.c_str());
-            }else if (strcmp(ship_env.source.c_str(), "openbsd") == 0) {
-                ship_env.os = TestedVM::openbsd; 
-                std::string find_image_file_link_cmd = "lynx -dump -listonly -nonumbers https://bsd-cloud-image.org | grep openbsd | grep -E '.qcow2$' | sort -V | tail -n 1"; 
-                ship_env.source = ship_env.source = exec(find_image_file_link_cmd.c_str());
-            }else if (strcmp(ship_env.source.c_str(), "netbsd") == 0) {
-                ship_env.os = TestedVM::netbsd; 
-                std::string find_image_file_link_cmd = "lynx -dump -listonly -nonumbers https://bsd-cloud-image.org | grep netbsd | grep -E '.qcow2$' | sort -V | tail -n 1"; 
-                ship_env.source = ship_env.source = exec(find_image_file_link_cmd.c_str());
-            }else if (strcmp(ship_env.source.c_str(), "dragonflybsd") == 0) {
-                ship_env.os = TestedVM::dragonflybsd; 
-                std::string find_image_file_link_cmd = "lynx -dump -listonly -nonumbers https://bsd-cloud-image.org | grep dragonflybsd | grep -E 'hammer2.*\\.qcow2$' | sort -V | tail -n 1"; 
-                ship_env.source = ship_env.source = exec(find_image_file_link_cmd.c_str());
-            }else if (strcmp(ship_env.source.c_str(), "windows") == 0) {
-                ship_env.os = TestedVM::windows; 
-                ship_env.source = "https://cloudbase.it/euladownload.php?h=kvm";
-            }else {
-                std::cout << "The specified vm is not available as a tested and configured vm" << std::endl;
-                continue;
+            print_available_tested_vms();
+        } else {
+            set_tested_vm(ship_env.source);
+            if (ship_env.os != TestedVM::UNKNOWN) {
+                break;
             }
-            break;
         }
-    }   
+    }
 }
 
 void create_disk_image() {
-    ship_env.disk_image_path = get_executable_dir() + "images/disk-images/" + ship_env.name + ".qcow2";
+    ship_env.disk_image_path = ship_lib_path + "images/disk-images/" + ship_env.name + ".qcow2";
     std::ifstream check_file(ship_env.disk_image_path);
     if (!check_file.good()) {
         std::cout << "Creating disk image at: " << ship_env.disk_image_path << std::endl;
+
         std::string create_disk_cmd = "qemu-img create -f qcow2 " + ship_env.disk_image_path + " 1G";
-        system(create_disk_cmd.c_str());
+        system_exec(create_disk_cmd);
     }
     check_file.close();
 }
@@ -566,14 +597,24 @@ void configure_vm() {
         case TestedVM::whonix:
             return;
         case TestedVM::debian:
+            boost::property_tree::ini_parser::read_ini(find_settings_file(), pt);
+
+            pt.put("system_exec.command_1", "root");
+
+            boost::property_tree::ini_parser::write_ini(find_settings_file(), pt);
+
+            run_startup_commands();
+
+            ship_env.command = "apt update";
+            exec_command_vm();
             return;
         case TestedVM::ubuntu:
             return;
         case TestedVM::arch:
             boost::property_tree::ini_parser::read_ini(find_settings_file(), pt);
 
-            pt.put("system.command_1", "arch");
-            pt.put("system.command_2", "arch");
+            pt.put("system_exec.command_1", "arch");
+            pt.put("system_exec.command_2", "arch");
 
             boost::property_tree::ini_parser::write_ini(find_settings_file(), pt);
 
@@ -612,36 +653,36 @@ void configure_vm() {
 void start_vm(const std::string& name) {
     std::cout << "Starting VM " << name << "...\n";
     std::string start_cmd = "virsh start " + name;
-    exec(start_cmd.c_str());
+    exec(start_cmd);
 }
 
 void system_command_vm() {
     std::string run_cmd = "tmux send-keys -t " + ship_env.name + " '" + ship_env.command + "' C-m";
-    system(run_cmd.c_str());
+    system_exec(run_cmd);
 }
 
 bool exec_command_vm() {
     std::string start_marker = "MARKER_" + std::to_string(rand());
     std::string start_marker_cmd = "tmux send-keys -t " + ship_env.name + " '" + start_marker + "' C-m";
-    system(start_marker_cmd.c_str());
+    system_exec(start_marker_cmd);
 
     system_command_vm();
 
     std::string end_marker = "MARKER_" + std::to_string(rand());
     std::string end_marker_cmd = "tmux send-keys -t " + ship_env.name + " 'echo " + end_marker + "' C-m";
-    system(end_marker_cmd.c_str());
+    system_exec(end_marker_cmd);
 
     std::string capture_cmd = "tmux capture-pane -t " + ship_env.name + " -pS - | tail -n 2 | head -n 1";
 
     while (true) {
-        std::string output = exec(capture_cmd.c_str());
+        std::string output = exec(capture_cmd);
         if (output.find(end_marker) != std::string::npos) {
             break;
         }
     }
 
     capture_cmd = "tmux capture-pane -t " + ship_env.name + " -pS - | tac | grep -m1 -B " + std::to_string(INT_MAX) + " " + start_marker + " | tac | tail -n +3 | sed '/^\\s*$/d' | head -n -3";
-    std::string output = exec(capture_cmd.c_str());
+    std::string output = exec(capture_cmd);
 
     if (ship_env.action == ShipAction::EXEC) {
         std::cout << output;
@@ -673,6 +714,43 @@ void find_vm_package_manager() {
     }
 }
 
+void send_vm_file() {
+    std::string get_vm_disk_image_cmd = "virsh domblklist " + ship_env.name + " --details | awk '/source file/ {print $3}' | grep '.qcow2$'";
+    std::string result = exec(get_vm_disk_image_cmd);
+    std::string send_vm_cmd = "croc send " + get_absolute_path(result);
+    std::cout << exec(send_vm_cmd) << std::endl;
+}
+
+void receive_vm_file() {
+    std::string code;
+    std::cout << "Please type the secret code: ";
+    std::getline(std::cin, code);
+
+    std::string set_croc_secret_cmd = "export CROC_SECRET=" + code;
+    std::cout << exec(set_croc_secret_cmd) << std::endl;
+
+    std::string source_local = ship_lib_path + "images/disk-images/";
+
+    std::string receive_vm_cmd = "croc recv -o " + source_local;
+    std::cout << exec(receive_vm_cmd) << std::endl;
+
+    std::string find_vm_image_cmd = "find " + source_local + " -type f -exec ls -t1 {} + | head -1";
+    std::string vm_image = exec(find_vm_image_cmd);
+
+    size_t extension_starting_position = source_local.find(".");
+    std::string image_name = source_local.substr(0, extension_starting_position);
+
+    std::cout << "Please specify the name of this VM (leaving this blank will set the name to the name given by the sender which is " << image_name << "): ";
+    std::string name_given;
+    std::getline(std::cin, name_given);
+    if (!name_given.empty()) {
+        ship_env.name = name_given;
+    } else {
+        ship_env.name = image_name;
+    }
+    create_vm();
+}
+
 void exec_action_for_vm() {
     std::string group = "libvirt";
     add_user_to_group(group);
@@ -684,6 +762,9 @@ void exec_action_for_vm() {
             break;
         case ShipAction::START:
             start_vm();
+            break;
+        case ShipAction::RESTART:
+            restart_vm();
             break;
         case ShipAction::DELETE:
             delete_vm();
@@ -715,10 +796,10 @@ void exec_action_for_vm() {
             exec_package_manager_operations();
             break;
         case ShipAction::RECEIVE:
-            receive_file();
+            receive_vm_file();
             break;
         case ShipAction::SEND:
-            send_file();
+            send_vm_file();
             break;
         default: 
             std::cout << "Invalid action for VM.\n";

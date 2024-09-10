@@ -21,6 +21,7 @@
 #include <random>
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/ini_parser.hpp>
+#include <boost/program_options.hpp>
 
 extern boost::property_tree::ptree pt;
 
@@ -51,6 +52,7 @@ enum class ShipAction {
     UPGRADE,
     LIST,
     START,
+    RESTART,
     PAUSE,
     STOP,
     RESUME,
@@ -104,12 +106,15 @@ struct ShipEnviornment {
     std::string disk_image_path;
 };
 
+extern std::string ship_lib_path; 
+
 extern ShipEnviornment ship_env;
 
 void show_help();
 std::string find_settings_file();
 std::string trim_trailing_whitespaces(const std::string& str);
-std::string exec(const char* cmd);
+void system_exec(const std::string& cmd);
+std::string exec(const std::string& cmd);
 void exec_package_manager_operations();
 std::vector<int> extract_numbers_with_prefix(const std::string& result,const std::string& prefix);
 int get_next_available_number_in_command_output(const std::string& command);
@@ -117,13 +122,16 @@ int get_next_available_vm_number();
 int get_next_available_container_number();
 std::vector<std::string> split_string_by_line(const std::string& str);
 std::string get_vm_state(const std::string &vm_name);
-void send_file();
-void receive_file();
+void send_container_file();
+void receive_container_file();
+void send_vm_file();
+void receive_vm_file();
 void delete_old_snapshots();
 void pass_password_to_tmux();
 void run_startup_commands();
 void wait_for_vm_ready();
 void start_vm();
+void restart_vm();
 std::string list_vm();
 std::string get_vm_image_paths();
 void clean_vm_resources();
@@ -133,6 +141,9 @@ void save_vm();
 void generate_vm_name();
 void start_vm_with_confirmation_prompt();
 void get_iso_source();
+void print_available_tested_vms();
+std::string get_tested_vm_link(const std::string &vm_name);
+void set_tested_vm(const std::string &vm_name);
 void get_tested_vm();
 void create_disk_image();
 void set_memory_limit();
@@ -171,6 +182,5 @@ void add_user_to_group(const std::string& group);
 void restart_systemctl_service(const std::string& service_name);
 std::string get_absolute_path(const std::string &relative_path);
 std::string generate_mac_address();
-std::string get_executable_dir();
 #endif // SHIP_H
 

@@ -90,8 +90,8 @@ Usage, Run:
 
 Options:
   --help                          Show this help message and exit
-  --virtual-machine or -vm        Specify action is for VM
-  --container or -ctr             Specify action is for container
+  --virtual-machine or --vm        Specify action is for VM
+  --container or --ctr             Specify action is for container
   --name NAME                     Specifies the name of the container or VM an action should be executed on
 
 Commands:
@@ -102,6 +102,7 @@ Commands:
       --cpus NUMBER               Set the CPU limit of the VM
       --memory or -mem SIZE       Set the memory limit of the VM
     start NAME                    Start the specified virtual machine
+    restart or reboot NAME        Start the specified virtual machine
     delete NAME                   Delete the specified virtual machine
     list                          List all virtual machines
     view or enter NAME            Shows a console interface or a full GUI of the virtual machine
