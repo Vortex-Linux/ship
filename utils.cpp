@@ -16,6 +16,7 @@ void show_help() {
     std::cout << "      --cpus NUMBER               Set the CPU limit of the VM" << std::endl;
     std::cout << "      --memory or -mem SIZE       Set the memory limit of the VM" << std::endl;
     std::cout << "    start NAME                    Start the specified virtual machine" << std::endl;
+    std::cout << "    restart or reboot NAME        Start the specified virtual machine" << std::endl;
   std::cout << "    delete NAME                   Delete the specified virtual machine" << std::endl;
     std::cout << "    list                          List all virtual machines" << std::endl;
     std::cout << "    view or enter NAME            Shows a console interface or a full GUI of the virtual machine" << std::endl;
@@ -103,8 +104,8 @@ std::string list_container() {
 }
 
 std::string get_vm_state(const std::string &vm_name) {
-    std::string cmd = "virsh domstate " + vm_name;
-    return exec(cmd);
+    ship_env.command = "virsh domstate " + vm_name;
+    return trim_trailing_whitespaces(exec(ship_env.command));
 }
 
 std::vector<int> extract_numbers_with_prefix(const std::string& result,const std::string& prefix) {

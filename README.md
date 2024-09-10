@@ -102,6 +102,7 @@ Commands:
       --cpus NUMBER               Set the CPU limit of the VM
       --memory or -mem SIZE       Set the memory limit of the VM
     start NAME                    Start the specified virtual machine
+    restart or reboot NAME        Start the specified virtual machine
     delete NAME                   Delete the specified virtual machine
     list                          List all virtual machines
     view or enter NAME            Shows a console interface or a full GUI of the virtual machine

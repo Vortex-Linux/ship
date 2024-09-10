@@ -90,6 +90,11 @@ void start_vm() {
     run_startup_commands();
 }
 
+void restart_vm() {
+    shutdown_vm();
+    start_vm();
+}
+
 void view_vm_console() {
     std::string view_cmd = "tmux attach-session -t " + ship_env.name;      
     system_exec(view_cmd);
@@ -150,10 +155,22 @@ void save_vm() {
 }
 
 void shutdown_vm() {
+    std::string state = get_vm_state(ship_env.name);
+    if (state.find("running") == std::string::npos && state.find("paused") == std::string::npos) {
+        std::cout << "The vm is already in a shut-off state" << std::endl;
+
+        if (ship_env.action == ShipAction::RESTART) {
+            std::cout << "Cancelling the restart proccess" << std::endl;
+            exit(EXIT_FAILURE);
+        }
+
+        return;
+    }
+
     std::string shutdown_cmd = "virsh shutdown " + ship_env.name; 
     system_exec(shutdown_cmd); 
     
-    std::string shutdown_signal = "virsh --event lifecycle --timeout 5 " + ship_env.name;
+    std::string shutdown_signal = "virsh event --event lifecycle --timeout 5 " + ship_env.name;
     bool timeout = system(shutdown_signal.c_str());
     if (timeout) {
         std::cout << "The VM isnt responding do you want to forcefully shutdown the vm ? (y/n): ";
@@ -169,7 +186,7 @@ void shutdown_vm() {
         std::string shutdown_cmd = "virsh destroy " + ship_env.name + "\n";
         system_exec(shutdown_cmd);
     }
-    std::cout << "Successfully shutdown " << ship_env.name; 
+    std::cout << "Successfully shutdown " << ship_env.name << std::endl; 
 }
 
 std::string get_vm_image_paths() {
@@ -200,7 +217,7 @@ void clean_vm_resources() {
 void delete_vm() {
     std::string state = get_vm_state(ship_env.name);
     if (state.find("running") != std::string::npos || state.find("paused") != std::string::npos) {
-        std::cout << "Forcefully shutting down VM " << ship_env.name << " before deletion.\n";
+        std::cout << "forcefully shutting down vm " << ship_env.name << " before deletion.\n";
         std::string shutdown_cmd = "virsh destroy " + ship_env.name;
         system_exec(shutdown_cmd);
     }
@@ -416,7 +433,7 @@ void get_iso_source() {
         std::string download_cmd = "aria2c --dir " + ship_lib_path + "images/iso-images " + ship_env.source;
         system_exec(download_cmd);
         std::cout << "Finding the path to the downloaded iso image" << "\n";
-        std::string find_latest_image_cmd = "find images/iso-images  -type f -exec ls -t1 {} + | head -1";
+        std::string find_latest_image_cmd = "find " + ship_lib_path + "images/iso-images  -type f -exec ls -t1 {} + | head -1";
         ship_env.source_local = exec(find_latest_image_cmd);
         std::cout << "Found the path as " << ship_env.source_local << "\n";
     }
@@ -745,6 +762,9 @@ void exec_action_for_vm() {
             break;
         case ShipAction::START:
             start_vm();
+            break;
+        case ShipAction::RESTART:
+            restart_vm();
             break;
         case ShipAction::DELETE:
             delete_vm();

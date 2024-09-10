@@ -32,6 +32,8 @@ std::ostream& operator<<(std::ostream& os, const ShipAction& action) {
             return os << "List";
         case ShipAction::START:
             return os << "Start";
+        case ShipAction::RESTART:
+            return os << "Restart";
         case ShipAction::PAUSE:
             return os << "Pause";
         case ShipAction::STOP:
@@ -190,6 +192,8 @@ void process_operands(int argc, char *argv[]) {
             ship_env.action = ShipAction::CREATE;
         } else if (action == "start") {
             ship_env.action = ShipAction::START;
+        } else if (action == "restart" || action == "reboot") {
+            ship_env.action = ShipAction::RESTART;
         } else if (action == "delete") {
             ship_env.action = ShipAction::DELETE;
         } else if (action == "list") {

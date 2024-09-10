@@ -52,6 +52,7 @@ enum class ShipAction {
     UPGRADE,
     LIST,
     START,
+    RESTART,
     PAUSE,
     STOP,
     RESUME,
@@ -130,6 +131,7 @@ void pass_password_to_tmux();
 void run_startup_commands();
 void wait_for_vm_ready();
 void start_vm();
+void restart_vm();
 std::string list_vm();
 std::string get_vm_image_paths();
 void clean_vm_resources();
