@@ -135,6 +135,7 @@ void restart_vm();
 std::string list_vm();
 std::string get_vm_image_paths();
 void clean_vm_resources();
+bool vm_exists(const std::string& vm_name);
 void delete_vm();
 void create_vm();
 void save_vm();

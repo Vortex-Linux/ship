@@ -214,8 +214,21 @@ void clean_vm_resources() {
     std::cout << "Successfully deleted all resources which are not needed anymore." << std::endl;;
 }
 
+bool vm_exists(const std::string& vm_name) {
+    std::string check_cmd = "virsh list --all | grep -w " + vm_name;
+    int result = system(check_cmd.c_str());
+    return result == 0;  
+}
+
 void delete_vm() {
     std::string state = get_vm_state(ship_env.name);
+
+    if (!vm_exists(ship_env.name)) {
+        std::cout << "VM " << ship_env.name << " does not exist" << std::endl;
+        std::cout << "Cancelling the deletion proccess";
+        return;
+    }
+
     if (state.find("running") != std::string::npos || state.find("paused") != std::string::npos) {
         std::cout << "forcefully shutting down vm " << ship_env.name << " before deletion.\n";
         std::string shutdown_cmd = "virsh destroy " + ship_env.name;
