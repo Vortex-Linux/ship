@@ -225,7 +225,7 @@ void delete_vm() {
 
     if (!vm_exists(ship_env.name)) {
         std::cout << "VM " << ship_env.name << " does not exist" << std::endl;
-        std::cout << "Cancelling the deletion proccess";
+        std::cout << "Cancelling the deletion proccess" << std::endl;
         return;
     }
 
@@ -257,6 +257,22 @@ void create_vm() {
         std::getline(std::cin, name_given);
         if(!name_given.empty()) {
             ship_env.name = name_given; 
+        }
+    }
+
+    if (vm_exists(ship_env.name)) {
+        std::cout << "VM with the name " << ship_env.name << " already exists" << std::endl;
+        std::cout << "Do you want to replace VM " << ship_env.name << " ? (y/n): ";
+
+        std::string confirm;
+        std::getline(std::cin, confirm);
+
+        if (confirm == "y" || confirm == "Y") {
+            std::cout << "Deleting " << ship_env.name << " before creating new one" << std::endl;
+            delete_vm();
+        } else {
+            std::cout << "VM creation proccess cancelled" << std::endl;
+            return;
         }
     }
 
