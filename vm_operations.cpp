@@ -384,45 +384,6 @@ std::string generate_vm_xml() {
     </video>
     <memballoon model='virtio'/>
 )";
-    switch(ship_env.os) {
-        case TestedVM::gentoo:
-        case TestedVM::ubuntu:
-        case TestedVM::fedora:
-        case TestedVM::freebsd:
-        case TestedVM::openbsd:
-        case TestedVM::netbsd:
-        case TestedVM::dragonflybsd:
-        case TestedVM::windows:
-        case TestedVM::debian:
-        case TestedVM::centos:
-        case TestedVM::alpine:
-        case TestedVM::whonix:
-        case TestedVM::tails:
-            vm_xml << R"(
-      <console type='pty'>
-        <target type='virtio'/>
-      </console>
-      <serial type='pty'>
-        <target port='0'/>
-      </serial>
-            )";
-            break;
-        case TestedVM::arch:
-            vm_xml << R"(
-      <console type='pty'>
-        <target type='virtio'/>
-      </console>
-            )";
-            break;
-        default:
-            break;
-    }
-
-    vm_xml << R"(
-  </devices>
-</domain>
-    )";
-
 
     std::string xml_filename = "/tmp/" + ship_env.name + ".xml";
     std::ofstream xml_file(xml_filename);
@@ -489,33 +450,33 @@ void print_available_tested_vms() {
 std::string get_tested_vm_link(const std::string &vm_name) {
     std::cout << ship_env.source << std::endl;
     if (vm_name == "tails") {
-        return "lynx -dump -listonly -nonumbers https://mirrors.edge.kernel.org/tails/stable/ | grep https://mirrors.edge.kernel.org/tails/stable/tails-amd64 | xargs -I {} lynx -dump -listonly -nonumbers '{}' | grep -E 'iso$' | grep -v '\\.sig$'";
+        return "";
     } else if (vm_name == "whonix") {
-        return "lynx -dump -listonly -nonumbers https://www.whonix.org/wiki/KVM | grep -E '.qcow2$'";
+        return "";
     } else if (vm_name == "debian") {
-        return "echo https://cdimage.debian.org/images/cloud/bookworm/latest/debian-12-nocloud-amd64.qcow2";
+        return "";
     } else if (vm_name == "ubuntu") {
-        return "lynx -dump -listonly -nonumbers https://cloud-images.ubuntu.com/releases | grep -E 'cloud-images.ubuntu.com/releases/[0-9]+(\\.[0-9]+)+/?$' | sort -V | tail -n 1 | awk '{print $0 \"/release/\"}' | xargs -I {} lynx -dump -listonly -nonumbers '{}' | grep -E 'amd64.img$'";
+        return "";
     } else if (vm_name == "arch") {
-        return "echo https://geo.mirror.pkgbuild.com/images/latest/Arch-Linux-x86_64-basic.qcow2";
+        return "https://github.com/Vortex-Linux/Arch-VM-Base/releases/download/v0.1/Arch-Linux-x86_64-basic.qcow2";
     } else if (vm_name == "gentoo") {
-        return "lynx -dump -listonly -nonumbers https://gentoo.osuosl.org/experimental/amd64/openstack/ | grep -E 'default.*\\.qcow2$' | grep -v 'nomultilib' | grep 'latest.qcow2$'";
+        return "";
     } else if (vm_name == "fedora") {
-        return "lynx -dump -listonly -nonumbers https://fedoraproject.org/cloud/download | grep -E 'x86_64/.*Generic.*\\.qcow2$'";
+        return "";
     } else if (vm_name == "alpine") {
-        return "lynx -dump -listonly -nonumbers https://alpinelinux.org/cloud/ | grep -E '.qcow2$' | grep x86_64 | grep bios-cloudinit-r0 | head -n 1";
+        return "";
     } else if (vm_name == "centos") {
-        return "lynx -dump -listonly -nonumbers https://cloud.centos.org/centos/9-stream/x86_64/images/ | grep -E '.qcow2$' | sort | tail -n 1";
+        return "";
     } else if (vm_name == "freebsd") {
-        return "lynx -dump -listonly -nonumbers https://bsd-cloud-image.org | grep freebsd | grep -E 'zfs.*\\.qcow2$' | sort -V | tail -n 1";
+        return "";
     } else if (vm_name == "openbsd") {
-        return "lynx -dump -listonly -nonumbers https://bsd-cloud-image.org | grep openbsd | grep -E '.qcow2$' | sort -V | tail -n 1";
+        return "";
     } else if (vm_name == "netbsd") {
-        return "lynx -dump -listonly -nonumbers https://bsd-cloud-image.org | grep netbsd | grep -E '.qcow2$' | sort -V | tail -n 1";
+        return "";
     } else if (vm_name == "dragonflybsd") {
-        return "lynx -dump -listonly -nonumbers https://bsd-cloud-image.org | grep dragonflybsd | grep -E 'hammer2.*\\.qcow2$' | sort -V | tail -n 1";
+        return "";
     } else if (vm_name == "windows") {
-        return "echo https://cloudbase.it/euladownload.php?h=kvm";
+        return "";
     }
     return "";
 }
@@ -554,10 +515,7 @@ void set_tested_vm(const std::string &vm_name) {
         return;
     }
 
-    std::string vm_link_cmd = get_tested_vm_link(vm_name);
-    if (!vm_link_cmd.empty()) {
-        ship_env.source = exec(vm_link_cmd);
-    }
+    ship_env.source = get_tested_vm_link(vm_name);
 }
 
 void get_tested_vm() {
