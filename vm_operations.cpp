@@ -61,6 +61,11 @@ void run_startup_commands() {
     }
 }
 
+std::string find_network_address_vm() {
+    ship_env.command = "sudo virsh domifaddr " + ship_env.name + " | awk {print $4} | tail -n 2";
+    return trim_trailing_whitespaces(exec(ship_env.command)); 
+}
+
 void start_vm() {
     std::string load_saved_cmd = "virsh snapshot-revert --current " + ship_env.name;
     exec(load_saved_cmd);
@@ -88,6 +93,15 @@ void start_vm() {
     wait_for_vm_ready();
     
     run_startup_commands();
+
+    ship_env.command = "xpra start :100";
+    system_command_vm();
+
+    std::string username = pt.get<std::string>("credentials.username");
+    std::string password = pt.get<std::string>("credentials.password");
+
+    ship_env.command = "xpra attach ssh://" + username + "@" + find_network_address_vm() + " &";
+    system_exec(ship_env.command);
 }
 
 void restart_vm() {
@@ -384,6 +398,45 @@ std::string generate_vm_xml() {
     </video>
     <memballoon model='virtio'/>
 )";
+    switch(ship_env.os) {
+        case TestedVM::gentoo:
+        case TestedVM::ubuntu:
+        case TestedVM::fedora:
+        case TestedVM::freebsd:
+        case TestedVM::openbsd:
+        case TestedVM::netbsd:
+        case TestedVM::dragonflybsd:
+        case TestedVM::windows:
+        case TestedVM::debian:
+        case TestedVM::centos:
+        case TestedVM::alpine:
+        case TestedVM::whonix:
+        case TestedVM::tails:
+            vm_xml << R"(
+      <console type='pty'>
+        <target type='virtio'/>
+      </console>
+      <serial type='pty'>
+        <target port='0'/>
+      </serial>
+            )";
+            break;
+        case TestedVM::arch:
+            vm_xml << R"(
+      <console type='pty'>
+        <target type='virtio'/>
+      </console>
+            )";
+            break;
+        default:
+            break;
+    }
+
+    vm_xml << R"(
+  </devices>
+</domain>
+    )";
+
 
     std::string xml_filename = "/tmp/" + ship_env.name + ".xml";
     std::ofstream xml_file(xml_filename);
@@ -479,6 +532,84 @@ std::string get_tested_vm_link(const std::string &vm_name) {
         return "";
     }
     return "";
+}
+
+void tested_vm_information() {
+    switch(ship_env.os) {
+        case TestedVM::tails:
+            std::cout << "Hostname:archlinux," << std::endl;
+            std::cout << "Username:arch," << std::endl; 
+            std::cout << "Password:arch" << std::endl;
+            break;
+        case TestedVM::whonix:
+            std::cout << "Hostname:archlinux," << std::endl;
+            std::cout << "Username:arch," << std::endl; 
+            std::cout << "Password:arch" << std::endl;
+            break;
+        case TestedVM::debian:
+            std::cout << "Hostname:archlinux," << std::endl;
+            std::cout << "Username:arch," << std::endl; 
+            std::cout << "Password:arch" << std::endl;
+            break;
+        case TestedVM::ubuntu:
+            std::cout << "Hostname:archlinux," << std::endl;
+            std::cout << "Username:arch," << std::endl; 
+            std::cout << "Password:arch" << std::endl;
+            break;
+        case TestedVM::arch:
+            std::cout << "Hostname:archlinux," << std::endl;
+            std::cout << "Username:arch," << std::endl; 
+            std::cout << "Password:arch" << std::endl;
+            break;
+        case TestedVM::gentoo:
+            std::cout << "Hostname:archlinux," << std::endl;
+            std::cout << "Username:arch," << std::endl; 
+            std::cout << "Password:arch" << std::endl;
+            break;
+        case TestedVM::fedora:
+            std::cout << "Hostname:archlinux," << std::endl;
+            std::cout << "Username:arch," << std::endl; 
+            std::cout << "Password:arch" << std::endl;
+            break;
+        case TestedVM::alpine:
+            std::cout << "Hostname:archlinux," << std::endl;
+            std::cout << "Username:arch," << std::endl; 
+            std::cout << "Password:arch" << std::endl;
+            break;
+        case TestedVM::centos:
+            std::cout << "Hostname:archlinux," << std::endl;
+            std::cout << "Username:arch," << std::endl; 
+            std::cout << "Password:arch" << std::endl;
+            break;
+        case TestedVM::freebsd:
+            std::cout << "Hostname:archlinux," << std::endl;
+            std::cout << "Username:arch," << std::endl; 
+            std::cout << "Password:arch" << std::endl;
+            break;
+        case TestedVM::openbsd:
+            std::cout << "Hostname:archlinux," << std::endl;
+            std::cout << "Username:arch," << std::endl; 
+            std::cout << "Password:arch" << std::endl;
+            break;
+        case TestedVM::netbsd:
+            std::cout << "Hostname:archlinux," << std::endl;
+            std::cout << "Username:arch," << std::endl; 
+            std::cout << "Password:arch" << std::endl;
+            break;
+        case TestedVM::dragonflybsd:
+            std::cout << "Hostname:archlinux," << std::endl;
+            std::cout << "Username:arch," << std::endl; 
+            std::cout << "Password:arch" << std::endl;
+            break;
+        case TestedVM::windows:
+            std::cout << "Hostname:archlinux," << std::endl;
+            std::cout << "Username:arch," << std::endl; 
+            std::cout << "Password:arch" << std::endl;
+            break;
+        default:
+            std::cout << "The program encountered some problems,the os has not been set,please try again,if you encounter issues again please contact the developers" << std::endl;           
+            break;
+    }
 }
 
 void set_tested_vm(const std::string &vm_name) {
@@ -602,16 +733,13 @@ void configure_vm() {
 
             pt.put("system_exec.command_1", "arch");
             pt.put("system_exec.command_2", "arch");
+            pt.put("credentials.hostname", "archlinux");
+            pt.put("credentials.username", "arch");
+            pt.put("credentials.password", "arch");
 
             boost::property_tree::ini_parser::write_ini(find_settings_file(), pt);
 
             run_startup_commands();
-
-            ship_env.command = "pacman-key --init";
-            exec_command_vm();
-
-            ship_env.command = "pacman-key --populate-key archlinux";
-            exec_command_vm();
             return;
 
         case TestedVM::gentoo:
@@ -635,12 +763,6 @@ void configure_vm() {
         default:
             return;
     }
-}
-
-void start_vm(const std::string& name) {
-    std::cout << "Starting VM " << name << "...\n";
-    std::string start_cmd = "virsh start " + name;
-    exec(start_cmd);
 }
 
 void system_command_vm() {
