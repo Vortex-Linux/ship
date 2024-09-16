@@ -2,6 +2,7 @@
 #define SHIP_H
 
 #include <iostream>
+#include <thread>
 #include <cstdlib>
 #include <cstring>
 #include <string>
@@ -12,6 +13,7 @@
 #include <algorithm>
 #include <stdexcept>
 #include <memory>
+#include <chrono>
 #include <array>
 #include <unordered_map>
 #include <map>

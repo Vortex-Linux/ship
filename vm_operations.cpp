@@ -62,7 +62,7 @@ void run_startup_commands() {
 }
 
 std::string find_network_address_vm() {
-    ship_env.command = "sudo virsh domifaddr " + ship_env.name + " | awk {print $4} | tail -n 2";
+    ship_env.command = "virsh domifaddr " + ship_env.name + " | awk '{print $4}' | cut -d'/' -f1 | tail -n 2";
     return trim_trailing_whitespaces(exec(ship_env.command)); 
 }
 
@@ -98,17 +98,20 @@ void start_vm() {
         boost::property_tree::ini_parser::read_ini(find_settings_file(), pt);
 
         if(!pt.get<bool>("xpra.enabled", false)) {
+            std::cout << "hi";
             return;
         }
 
         ship_env.command = "xpra start :100";
-        system_command_vm();
+        exec_command_vm();
 
         std::string username = pt.get<std::string>("credentials.username");
         std::string password = pt.get<std::string>("credentials.password");
 
-        ship_env.command = "xpra attach ssh://" + username + "@" + find_network_address_vm() + " &";
-    system_exec(ship_env.command);
+        ship_env.command = "xpra attach ssh://" + username + ":" + password + "@" + find_network_address_vm() + "/100 &";
+        std::cout << ship_env.command << std::endl;
+        system_exec(ship_env.command);
+
     } catch(const boost::property_tree::ptree_bad_path&) {
         std::cout << "This VM cannot perform application forwarding because the credentials are not set correctly. Please reference the documentation to add the credentials if you believe Xpra is already set up for application forwarding, or set it up manually if nothing is configured yet." << std::endl;
     }
@@ -337,7 +340,7 @@ void create_vm() {
         configure_vm();
     } else {
         start_vm_with_confirmation_prompt();
-    }
+}
 
 }
 
@@ -521,7 +524,7 @@ std::string get_tested_vm_link(const std::string &vm_name) {
     } else if (vm_name == "ubuntu") {
         return "";
     } else if (vm_name == "arch") {
-        return "https://github.com/Vortex-Linux/Arch-VM-Base/releases/download/v0.1/Arch-Linux-x86_64-basic.qcow2";
+        return "https://github.com/Vortex-Linux/Arch-VM-Base/releases/download/v0.1.1/Arch-Linux-x86_64-basic.qcow2";
     } else if (vm_name == "gentoo") {
         return "";
     } else if (vm_name == "fedora") {
@@ -749,6 +752,7 @@ void configure_vm() {
 
             pt.put("system_exec.command_1", "arch");
             pt.put("system_exec.command_2", "arch");
+            pt.put("system_exec.command_3", "export DISPLAY=:100");
 
             boost::property_tree::ini_parser::write_ini(find_settings_file(), pt);
 
