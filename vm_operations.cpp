@@ -94,14 +94,24 @@ void start_vm() {
     
     run_startup_commands();
 
-    ship_env.command = "xpra start :100";
-    system_command_vm();
+    try {
+        boost::property_tree::ini_parser::read_ini(find_settings_file(), pt);
 
-    std::string username = pt.get<std::string>("credentials.username");
-    std::string password = pt.get<std::string>("credentials.password");
+        if(!pt.get<bool>("xpra.enabled", false)) {
+            return;
+        }
 
-    ship_env.command = "xpra attach ssh://" + username + "@" + find_network_address_vm() + " &";
+        ship_env.command = "xpra start :100";
+        system_command_vm();
+
+        std::string username = pt.get<std::string>("credentials.username");
+        std::string password = pt.get<std::string>("credentials.password");
+
+        ship_env.command = "xpra attach ssh://" + username + "@" + find_network_address_vm() + " &";
     system_exec(ship_env.command);
+    } catch(const boost::property_tree::ptree_bad_path&) {
+        std::cout << "This VM cannot perform application forwarding because the credentials are not set correctly. Please reference the documentation to add the credentials if you believe Xpra is already set up for application forwarding, or set it up manually if nothing is configured yet." << std::endl;
+    }
 }
 
 void restart_vm() {
@@ -219,11 +229,11 @@ void clean_vm_resources() {
     while (std::getline(stream, image_path)) {
         std::cout << "Deleting " << image_path << std::endl;
         ship_env.command = "rm " + image_path;
-        system_exec(ship_env.command);
+        system(ship_env.command.c_str());
     }
 
     ship_env.command = "rm " + ship_lib_path + "settings/vm-settings/" + ship_env.name + ".ini";
-    system_exec(ship_env.command);
+    system(ship_env.command.c_str());
 
     std::cout << "Successfully deleted all resources which are not needed anymore." << std::endl;;
 }
@@ -731,11 +741,14 @@ void configure_vm() {
         case TestedVM::arch:
             boost::property_tree::ini_parser::read_ini(find_settings_file(), pt);
 
-            pt.put("system_exec.command_1", "arch");
-            pt.put("system_exec.command_2", "arch");
             pt.put("credentials.hostname", "archlinux");
             pt.put("credentials.username", "arch");
             pt.put("credentials.password", "arch");
+ 
+            pt.put("xpra.enabled", true);
+
+            pt.put("system_exec.command_1", "arch");
+            pt.put("system_exec.command_2", "arch");
 
             boost::property_tree::ini_parser::write_ini(find_settings_file(), pt);
 
