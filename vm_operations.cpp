@@ -67,7 +67,7 @@ std::string find_network_address_vm() {
 }
 
 void attach_xpra() {
-    int max_retries = 3; 
+    int max_retries = 5; 
     int delay = 10;
     int attempt = 1;
     
@@ -83,16 +83,20 @@ void attach_xpra() {
 
         std::string xpra_attach_log_path = "/tmp/xpra_attach.log";
         if (wait_for_file(xpra_attach_log_path, 10) && wait_for_file_to_fill(xpra_attach_log_path, 10)) { 
-            std::ifstream file(xpra_attach_log_path);
-            while (true) {
+            bool xpra_attach_message_found = false;
+            while (!xpra_attach_message_found) {
+                sleep(3);
+                std::ifstream file(xpra_attach_log_path);
                 if (file.is_open()) {
                     std::string line; 
                     while (getline(file, line)) { 
                         if (line.find(xpra_attach_success_message) != std::string::npos) {
-                            std::cout << "Successfully attached to the xpra session on VM";
+                            std::cout << "Successfully attached to the xpra session on VM" << std::endl;
                             return;
                         }
+
                         if (line.find(xpra_attach_failure_message) != std::string::npos) {
+                            xpra_attach_message_found = true;
                             break;
                         }
                     }
@@ -106,7 +110,7 @@ void attach_xpra() {
             exit(EXIT_FAILURE);
         } 
 
-        std::cout << "Attempt " << attempt << " failed. Server might not be running yet." << std::endl;
+        std::cout << "Attempt " << attempt << " of " << max_retries << " failed. Server might not be running yet." << std::endl;
         sleep(delay); 
         attempt++;
 
