@@ -21,6 +21,7 @@
 #include <unistd.h>
 #include <iomanip>
 #include <random>
+#include <sys/stat.h>
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/ini_parser.hpp>
 #include <boost/program_options.hpp>
@@ -133,6 +134,7 @@ void pass_password_to_tmux();
 void run_startup_commands();
 void wait_for_vm_ready();
 std::string find_network_address_vm();
+void attach_xpra();
 void start_vm();
 void restart_vm();
 std::string list_vm();
@@ -187,5 +189,9 @@ void add_user_to_group(const std::string& group);
 void restart_systemctl_service(const std::string& service_name);
 std::string get_absolute_path(const std::string &relative_path);
 std::string generate_mac_address();
+bool file_exists(const std::string& file_path);
+bool wait_for_file(const std::string& file_path, int timeout_seconds);
+bool wait_for_file_to_fill(const std::string& file_path, int timeout_seconds);
+bool is_file_non_empty(const std::string& file_path);
 #endif // SHIP_H
 

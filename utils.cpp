@@ -248,3 +248,42 @@ void add_user_to_group(const std::string& group) {
         system_exec(command);
     } 
 }
+
+bool file_exists(const std::string& file_path) {
+    struct stat buffer;
+    return (stat(file_path.c_str(), &buffer) == 0 && S_ISREG(buffer.st_mode));
+}
+
+bool wait_for_file(const std::string& file_path, int timeout_seconds) {
+    int elapsed_time = 0;
+    while (elapsed_time < timeout_seconds) {
+        if (file_exists(file_path)) {
+            return true;
+        }
+        sleep(1); 
+        elapsed_time++;
+    }
+    return false;
+}
+
+bool is_file_non_empty(const std::string& file_path) {
+    std::ifstream file(file_path, std::ios::ate | std::ios::binary);
+    if (!file.is_open()) {
+        return false;
+    }
+    std::streampos file_size = file.tellg();
+    file.close();
+    return file_size > 0;
+}
+
+bool wait_for_file_to_fill(const std::string& file_path, int timeout_seconds) {
+    int elapsed_time = 0;
+    while (elapsed_time < timeout_seconds) {
+        if (is_file_non_empty(file_path)) {
+            return true;
+        }
+        sleep(1); 
+        elapsed_time++;
+    }
+    return false;
+}

@@ -66,56 +66,6 @@ std::string find_network_address_vm() {
     return trim_trailing_whitespaces(exec(ship_env.command)); 
 }
 
-void attach_xpra() {
-    int max_retries = 3; 
-    int delay = 10;
-    int attempt = 1;
-    
-    std::cout << "Trying to connect to the xpra server. This might take a few moments if the server isn't running yet." << std::endl;
-
-    std::string xpra_attach_success_message = "Attached to xpra server";
-    std::string xpra_attach_failure_message = "removing unix domain socket";
-    while (attempt <= max_retries) {
-        std::string delete_old_xpra_attach_log_cmd = "rm /tmp/xpra_attach.log"; 
-        system(delete_old_xpra_attach_log_cmd.c_str()); 
-        
-        system(ship_env.command.c_str());
-
-        std::string xpra_attach_log_path = "/tmp/xpra_attach.log";
-        if (wait_for_file(xpra_attach_log_path, 10) && wait_for_file_to_fill(xpra_attach_log_path, 10)) { 
-            std::ifstream file(xpra_attach_log_path);
-            while (true) {
-                if (file.is_open()) {
-                    std::string line; 
-                    while (getline(file, line)) { 
-                        if (line.find(xpra_attach_success_message) != std::string::npos) {
-                            std::cout << "Successfully attached to the xpra session on VM";
-                            return;
-                        }
-                        if (line.find(xpra_attach_failure_message) != std::string::npos) {
-                            break;
-                        }
-                    }
-                } else {
-                    std::cerr << "Failed to open log file. Check permissions." << std::endl;
-                    exit(EXIT_FAILURE);
-                }  
-            }
-        } else {
-            std::cout << "Xpra attach log file didnt appear on time." << std::endl;
-            exit(EXIT_FAILURE);
-        } 
-
-        std::cout << "Attempt " << attempt << " failed. Server might not be running yet." << std::endl;
-        sleep(delay); 
-        attempt++;
-
-    }
-
-    std::cout << "Could not attach to the xpra server after " << max_retries << " attempts. Please check if the server is running." << std::endl;
-    exit(EXIT_FAILURE);
-} 
-
 void start_vm() {
     std::string load_saved_cmd = "virsh snapshot-revert --current " + ship_env.name;
     exec(load_saved_cmd);
@@ -156,9 +106,10 @@ void start_vm() {
 
         std::string username = pt.get<std::string>("credentials.username");
         std::string password = pt.get<std::string>("credentials.password");
-        
-        ship_env.command = "nohup xpra attach ssh://" + username + ":" + password + "@" + find_network_address_vm() + "/100 > /tmp/xpra_attach.log 2>&1 & disown";
-        attach_xpra();
+
+        ship_env.command = "xpra attach ssh://" + username + ":" + password + "@" + find_network_address_vm() + "/100 &";
+        std::cout << ship_env.command << std::endl;
+        system_exec(ship_env.command);
 
     } catch(const boost::property_tree::ptree_bad_path&) {
         std::cout << "This VM cannot perform application forwarding because the credentials are not set correctly. Please reference the documentation to add the credentials if you believe Xpra is already set up for application forwarding, or set it up manually if nothing is configured yet." << std::endl;
@@ -838,18 +789,16 @@ void system_command_vm() {
 bool exec_command_vm() {
     std::string run_cmd = ship_env.command;
 
-    std::string start_marker = "echo marker_" + std::to_string(rand());
-    ship_env.command = start_marker;
+    ship_env.command = "echo marker_" + std::to_string(rand());
     system_command_vm();
 
     ship_env.command = run_cmd;
     system_command_vm();
 
-    std::string end_marker = "echo marker_" + std::to_string(rand());
-    ship_env.command = end_marker;
+    ship_env.command = "echo marker_" + std::to_string(rand());
     system_command_vm(); 
 
-    std::string capture_cmd = "tmux capture-pane -t " + ship_env.name + " -pS - | tail -n 2 | head -n 1";
+    std::string capture_cmd = "tmux capture-pane -t " + ship_env.name + " -ps - | tail -n 2 | head -n 1";
 
     while (true) {
         std::string output = exec(capture_cmd);
@@ -858,14 +807,14 @@ bool exec_command_vm() {
         }
     }
 
-    capture_cmd = "tmux capture-pane -t " + ship_env.name + " -pS - | tac | grep -m1 -B " + std::to_string(INT_MAX) + " " + start_marker + " | tac | tail -n +3 | sed '/^\\s*$/d' | head -n -3";
+    capture_cmd = "tmux capture-pane -t " + ship_env.name + " -ps - | tac | grep -m1 -b " + std::to_string(int_max) + " " + start_marker + " | tac | tail -n +3 | sed '/^\\s*$/d' | head -n -3";
     std::string output = exec(capture_cmd);
 
-    if (ship_env.action == ShipAction::EXEC) {
+    if (ship_env.action == shipaction::exec) {
         std::cout << output;
     }
 
-    if (ship_env.action != ShipAction::EXEC && output.find_first_not_of(' ') != std::string::npos) {
+    if (ship_env.action != shipaction::exec && output.find_first_not_of(' ') != std::string::npos) {
         return true;
     }
 
