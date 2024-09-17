@@ -61,6 +61,65 @@ void run_startup_commands() {
     }
 }
 
+std::string find_network_address_vm() {
+    ship_env.command = "virsh domifaddr " + ship_env.name + " | awk '{print $4}' | cut -d'/' -f1 | tail -n 2";
+    return trim_trailing_whitespaces(exec(ship_env.command)); 
+}
+
+void attach_xpra() {
+    int max_retries = 5; 
+    int delay = 10;
+    int attempt = 1;
+    
+    std::cout << "Trying to connect to the xpra server. This might take a few moments if the server isn't running yet." << std::endl;
+
+    std::string xpra_attach_success_message = "Attached to xpra server";
+    std::string xpra_attach_failure_message = "removing unix domain socket";
+    while (attempt <= max_retries) {
+        std::string delete_old_xpra_attach_log_cmd = "rm /tmp/xpra_attach.log"; 
+        system(delete_old_xpra_attach_log_cmd.c_str()); 
+        
+        system(ship_env.command.c_str());
+
+        std::string xpra_attach_log_path = "/tmp/xpra_attach.log";
+        if (wait_for_file(xpra_attach_log_path, 10) && wait_for_file_to_fill(xpra_attach_log_path, 10)) { 
+            bool xpra_attach_message_found = false;
+            while (!xpra_attach_message_found) {
+                sleep(3);
+                std::ifstream file(xpra_attach_log_path);
+                if (file.is_open()) {
+                    std::string line; 
+                    while (getline(file, line)) { 
+                        if (line.find(xpra_attach_success_message) != std::string::npos) {
+                            std::cout << "Successfully attached to the xpra session on VM" << std::endl;
+                            return;
+                        }
+
+                        if (line.find(xpra_attach_failure_message) != std::string::npos) {
+                            xpra_attach_message_found = true;
+                            break;
+                        }
+                    }
+                } else {
+                    std::cerr << "Failed to open log file. Check permissions." << std::endl;
+                    exit(EXIT_FAILURE);
+                }  
+            }
+        } else {
+            std::cout << "Xpra attach log file didnt appear on time." << std::endl;
+            exit(EXIT_FAILURE);
+        } 
+
+        std::cout << "Attempt " << attempt << " of " << max_retries << " failed. Server might not be running yet." << std::endl;
+        sleep(delay); 
+        attempt++;
+
+    }
+
+    std::cout << "Could not attach to the xpra server after " << max_retries << " attempts. Please check if the server is running." << std::endl;
+    exit(EXIT_FAILURE);
+} 
+
 void start_vm() {
     std::string load_saved_cmd = "virsh snapshot-revert --current " + ship_env.name;
     exec(load_saved_cmd);
@@ -88,6 +147,26 @@ void start_vm() {
     wait_for_vm_ready();
     
     run_startup_commands();
+
+    try {
+        boost::property_tree::ini_parser::read_ini(find_settings_file(), pt);
+
+        if(!pt.get<bool>("xpra.enabled", false)) {
+            return;
+        }
+
+        ship_env.command = "xpra start :100";
+        exec_command_vm(); 
+
+        std::string username = pt.get<std::string>("credentials.username");
+        std::string password = pt.get<std::string>("credentials.password");
+        
+        ship_env.command = "nohup xpra attach ssh://" + username + ":" + password + "@" + find_network_address_vm() + "/100 > /tmp/xpra_attach.log 2>&1 & disown";
+        attach_xpra();
+
+    } catch(const boost::property_tree::ptree_bad_path&) {
+        std::cout << "This VM cannot perform application forwarding because the credentials are not set correctly. Please reference the documentation to add the credentials if you believe Xpra is already set up for application forwarding, or set it up manually if nothing is configured yet." << std::endl;
+    }
 }
 
 void restart_vm() {
@@ -205,17 +284,30 @@ void clean_vm_resources() {
     while (std::getline(stream, image_path)) {
         std::cout << "Deleting " << image_path << std::endl;
         ship_env.command = "rm " + image_path;
-        system_exec(ship_env.command);
+        system(ship_env.command.c_str());
     }
 
     ship_env.command = "rm " + ship_lib_path + "settings/vm-settings/" + ship_env.name + ".ini";
-    system_exec(ship_env.command);
+    system(ship_env.command.c_str());
 
     std::cout << "Successfully deleted all resources which are not needed anymore." << std::endl;;
 }
 
+bool vm_exists(const std::string& vm_name) {
+    std::string check_cmd = "virsh list --all | grep -w " + vm_name;
+    int result = system(check_cmd.c_str());
+    return result == 0;  
+}
+
 void delete_vm() {
     std::string state = get_vm_state(ship_env.name);
+
+    if (!vm_exists(ship_env.name)) {
+        std::cout << "VM " << ship_env.name << " does not exist" << std::endl;
+        std::cout << "Cancelling the deletion proccess" << std::endl;
+        return;
+    }
+
     if (state.find("running") != std::string::npos || state.find("paused") != std::string::npos) {
         std::cout << "forcefully shutting down vm " << ship_env.name << " before deletion.\n";
         std::string shutdown_cmd = "virsh destroy " + ship_env.name;
@@ -244,6 +336,22 @@ void create_vm() {
         std::getline(std::cin, name_given);
         if(!name_given.empty()) {
             ship_env.name = name_given; 
+        }
+    }
+
+    if (vm_exists(ship_env.name)) {
+        std::cout << "VM with the name " << ship_env.name << " already exists" << std::endl;
+        std::cout << "Do you want to replace VM " << ship_env.name << " ? (y/n): ";
+
+        std::string confirm;
+        std::getline(std::cin, confirm);
+
+        if (confirm == "y" || confirm == "Y") {
+            std::cout << "Deleting " << ship_env.name << " before creating new one" << std::endl;
+            delete_vm();
+        } else {
+            std::cout << "VM creation proccess cancelled" << std::endl;
+            return;
         }
     }
 
@@ -284,7 +392,7 @@ void create_vm() {
         configure_vm();
     } else {
         start_vm_with_confirmation_prompt();
-    }
+}
 
 }
 
@@ -460,35 +568,113 @@ void print_available_tested_vms() {
 std::string get_tested_vm_link(const std::string &vm_name) {
     std::cout << ship_env.source << std::endl;
     if (vm_name == "tails") {
-        return "lynx -dump -listonly -nonumbers https://mirrors.edge.kernel.org/tails/stable/ | grep https://mirrors.edge.kernel.org/tails/stable/tails-amd64 | xargs -I {} lynx -dump -listonly -nonumbers '{}' | grep -E 'iso$' | grep -v '\\.sig$'";
+        return "";
     } else if (vm_name == "whonix") {
-        return "lynx -dump -listonly -nonumbers https://www.whonix.org/wiki/KVM | grep -E '.qcow2$'";
+        return "";
     } else if (vm_name == "debian") {
-        return "echo https://cdimage.debian.org/images/cloud/bookworm/latest/debian-12-nocloud-amd64.qcow2";
+        return "";
     } else if (vm_name == "ubuntu") {
-        return "lynx -dump -listonly -nonumbers https://cloud-images.ubuntu.com/releases | grep -E 'cloud-images.ubuntu.com/releases/[0-9]+(\\.[0-9]+)+/?$' | sort -V | tail -n 1 | awk '{print $0 \"/release/\"}' | xargs -I {} lynx -dump -listonly -nonumbers '{}' | grep -E 'amd64.img$'";
+        return "";
     } else if (vm_name == "arch") {
-        return "echo https://geo.mirror.pkgbuild.com/images/latest/Arch-Linux-x86_64-basic.qcow2";
+        return "https://github.com/Vortex-Linux/Arch-VM-Base/releases/download/v0.1.1/Arch-Linux-x86_64-basic.qcow2";
     } else if (vm_name == "gentoo") {
-        return "lynx -dump -listonly -nonumbers https://gentoo.osuosl.org/experimental/amd64/openstack/ | grep -E 'default.*\\.qcow2$' | grep -v 'nomultilib' | grep 'latest.qcow2$'";
+        return "";
     } else if (vm_name == "fedora") {
-        return "lynx -dump -listonly -nonumbers https://fedoraproject.org/cloud/download | grep -E 'x86_64/.*Generic.*\\.qcow2$'";
+        return "";
     } else if (vm_name == "alpine") {
-        return "lynx -dump -listonly -nonumbers https://alpinelinux.org/cloud/ | grep -E '.qcow2$' | grep x86_64 | grep bios-cloudinit-r0 | head -n 1";
+        return "";
     } else if (vm_name == "centos") {
-        return "lynx -dump -listonly -nonumbers https://cloud.centos.org/centos/9-stream/x86_64/images/ | grep -E '.qcow2$' | sort | tail -n 1";
+        return "";
     } else if (vm_name == "freebsd") {
-        return "lynx -dump -listonly -nonumbers https://bsd-cloud-image.org | grep freebsd | grep -E 'zfs.*\\.qcow2$' | sort -V | tail -n 1";
+        return "";
     } else if (vm_name == "openbsd") {
-        return "lynx -dump -listonly -nonumbers https://bsd-cloud-image.org | grep openbsd | grep -E '.qcow2$' | sort -V | tail -n 1";
+        return "";
     } else if (vm_name == "netbsd") {
-        return "lynx -dump -listonly -nonumbers https://bsd-cloud-image.org | grep netbsd | grep -E '.qcow2$' | sort -V | tail -n 1";
+        return "";
     } else if (vm_name == "dragonflybsd") {
-        return "lynx -dump -listonly -nonumbers https://bsd-cloud-image.org | grep dragonflybsd | grep -E 'hammer2.*\\.qcow2$' | sort -V | tail -n 1";
+        return "";
     } else if (vm_name == "windows") {
-        return "echo https://cloudbase.it/euladownload.php?h=kvm";
+        return "";
     }
     return "";
+}
+
+void tested_vm_information() {
+    switch(ship_env.os) {
+        case TestedVM::tails:
+            std::cout << "Hostname:archlinux," << std::endl;
+            std::cout << "Username:arch," << std::endl; 
+            std::cout << "Password:arch" << std::endl;
+            break;
+        case TestedVM::whonix:
+            std::cout << "Hostname:archlinux," << std::endl;
+            std::cout << "Username:arch," << std::endl; 
+            std::cout << "Password:arch" << std::endl;
+            break;
+        case TestedVM::debian:
+            std::cout << "Hostname:archlinux," << std::endl;
+            std::cout << "Username:arch," << std::endl; 
+            std::cout << "Password:arch" << std::endl;
+            break;
+        case TestedVM::ubuntu:
+            std::cout << "Hostname:archlinux," << std::endl;
+            std::cout << "Username:arch," << std::endl; 
+            std::cout << "Password:arch" << std::endl;
+            break;
+        case TestedVM::arch:
+            std::cout << "Hostname:archlinux," << std::endl;
+            std::cout << "Username:arch," << std::endl; 
+            std::cout << "Password:arch" << std::endl;
+            break;
+        case TestedVM::gentoo:
+            std::cout << "Hostname:archlinux," << std::endl;
+            std::cout << "Username:arch," << std::endl; 
+            std::cout << "Password:arch" << std::endl;
+            break;
+        case TestedVM::fedora:
+            std::cout << "Hostname:archlinux," << std::endl;
+            std::cout << "Username:arch," << std::endl; 
+            std::cout << "Password:arch" << std::endl;
+            break;
+        case TestedVM::alpine:
+            std::cout << "Hostname:archlinux," << std::endl;
+            std::cout << "Username:arch," << std::endl; 
+            std::cout << "Password:arch" << std::endl;
+            break;
+        case TestedVM::centos:
+            std::cout << "Hostname:archlinux," << std::endl;
+            std::cout << "Username:arch," << std::endl; 
+            std::cout << "Password:arch" << std::endl;
+            break;
+        case TestedVM::freebsd:
+            std::cout << "Hostname:archlinux," << std::endl;
+            std::cout << "Username:arch," << std::endl; 
+            std::cout << "Password:arch" << std::endl;
+            break;
+        case TestedVM::openbsd:
+            std::cout << "Hostname:archlinux," << std::endl;
+            std::cout << "Username:arch," << std::endl; 
+            std::cout << "Password:arch" << std::endl;
+            break;
+        case TestedVM::netbsd:
+            std::cout << "Hostname:archlinux," << std::endl;
+            std::cout << "Username:arch," << std::endl; 
+            std::cout << "Password:arch" << std::endl;
+            break;
+        case TestedVM::dragonflybsd:
+            std::cout << "Hostname:archlinux," << std::endl;
+            std::cout << "Username:arch," << std::endl; 
+            std::cout << "Password:arch" << std::endl;
+            break;
+        case TestedVM::windows:
+            std::cout << "Hostname:archlinux," << std::endl;
+            std::cout << "Username:arch," << std::endl; 
+            std::cout << "Password:arch" << std::endl;
+            break;
+        default:
+            std::cout << "The program encountered some problems,the os has not been set,please try again,if you encounter issues again please contact the developers" << std::endl;           
+            break;
+    }
 }
 
 void set_tested_vm(const std::string &vm_name) {
@@ -525,10 +711,7 @@ void set_tested_vm(const std::string &vm_name) {
         return;
     }
 
-    std::string vm_link_cmd = get_tested_vm_link(vm_name);
-    if (!vm_link_cmd.empty()) {
-        ship_env.source = exec(vm_link_cmd);
-    }
+    ship_env.source = get_tested_vm_link(vm_name);
 }
 
 void get_tested_vm() {
@@ -613,18 +796,19 @@ void configure_vm() {
         case TestedVM::arch:
             boost::property_tree::ini_parser::read_ini(find_settings_file(), pt);
 
+            pt.put("credentials.hostname", "archlinux");
+            pt.put("credentials.username", "arch");
+            pt.put("credentials.password", "arch");
+ 
+            pt.put("xpra.enabled", true);
+
             pt.put("system_exec.command_1", "arch");
             pt.put("system_exec.command_2", "arch");
+            pt.put("system_exec.command_3", "export DISPLAY=:100");
 
             boost::property_tree::ini_parser::write_ini(find_settings_file(), pt);
 
             run_startup_commands();
-
-            ship_env.command = "pacman-key --init";
-            exec_command_vm();
-
-            ship_env.command = "pacman-key --populate-key archlinux";
-            exec_command_vm();
             return;
 
         case TestedVM::gentoo:
@@ -650,27 +834,24 @@ void configure_vm() {
     }
 }
 
-void start_vm(const std::string& name) {
-    std::cout << "Starting VM " << name << "...\n";
-    std::string start_cmd = "virsh start " + name;
-    exec(start_cmd);
-}
-
 void system_command_vm() {
     std::string run_cmd = "tmux send-keys -t " + ship_env.name + " '" + ship_env.command + "' C-m";
     system_exec(run_cmd);
 }
 
 bool exec_command_vm() {
-    std::string start_marker = "MARKER_" + std::to_string(rand());
-    std::string start_marker_cmd = "tmux send-keys -t " + ship_env.name + " '" + start_marker + "' C-m";
-    system_exec(start_marker_cmd);
+    std::string run_cmd = ship_env.command;
 
+    std::string start_marker = "echo marker_" + std::to_string(rand());
+    ship_env.command = start_marker;
     system_command_vm();
 
-    std::string end_marker = "MARKER_" + std::to_string(rand());
-    std::string end_marker_cmd = "tmux send-keys -t " + ship_env.name + " 'echo " + end_marker + "' C-m";
-    system_exec(end_marker_cmd);
+    ship_env.command = run_cmd;
+    system_command_vm();
+
+    std::string end_marker = "echo marker_" + std::to_string(rand());
+    ship_env.command = end_marker;
+    system_command_vm(); 
 
     std::string capture_cmd = "tmux capture-pane -t " + ship_env.name + " -pS - | tail -n 2 | head -n 1";
 
