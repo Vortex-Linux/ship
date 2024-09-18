@@ -166,7 +166,7 @@ void resume_vm();
 void shutdown_vm();
 void system_command_vm(const std::string& command);
 bool exec_command_vm(const std::string& command);
-bool check_vm_command_exists();
+bool check_vm_command_exists(const std::string& command);
 void find_vm_package_manager();
 void start_container();
 std::string list_container();

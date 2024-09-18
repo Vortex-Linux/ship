@@ -786,9 +786,6 @@ void configure_vm() {
             boost::property_tree::ini_parser::write_ini(find_settings_file(), pt);
 
             run_startup_commands();
-
-            std::string apt_update_cmd = "apt update";
-            exec_command_vm(apt_update_cmd);
             return;
         case TestedVM::ubuntu:
             return;
@@ -873,8 +870,8 @@ bool exec_command_vm(const std::string& command) {
     return false;
 }
 
-bool check_vm_command_exists() {
-    std::string check_command_exists_cmd += " --version > /dev/null 2>&1 && echo 0";
+bool check_vm_command_exists(const std::string& command) {
+    std::string check_command_exists_cmd = command + " --version > /dev/null 2>&1 && echo 0";
     bool result = exec_command_vm(check_command_exists_cmd);
     return result;
 } 
@@ -893,8 +890,8 @@ void find_vm_package_manager() {
         std::string parameters = ship_env.command;
 
         for (const auto& package_manager : package_managers) {
-            ship_env.command = package_manager.first;
-            if (check_vm_command_exists()) {
+            std::string package_manager_name = package_manager.first;
+            if (check_vm_command_exists(package_manager_name)) {
                 ship_env.package_manager_name = package_manager.first;             
                 std::cout << "Package manager found as " << ship_env.package_manager_name << " for container " << ship_env.name << std::endl;
                 ship_env.command = parameters;
