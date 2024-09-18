@@ -177,7 +177,7 @@ void stop_container();
 void upgrade_container();
 void view_container();
 void stop_container();
-void exec_command_container();
+void exec_command_container(const std::string& command);
 bool check_container_command_exists(const std::string& command);
 void find_container_package_manager();
 void process_operands(int argc, char *argv[]);

@@ -195,10 +195,9 @@ void exec_package_manager_operations() {
         }
 
         package_manager_operation_cmd = "yes | " + package_manager_operation_cmd;
-        ship_env.command =  package_manager_operation_cmd;
 
         if(ship_env.mode==ShipMode::CONTAINER) {
-            exec_command_container();
+            exec_command_container(package_manager_operation_cmd);
         } else {
             ship_env.action = ShipAction::EXEC;
             exec_command_vm(package_manager_operation_cmd);
