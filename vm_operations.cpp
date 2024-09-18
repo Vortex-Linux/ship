@@ -42,7 +42,7 @@ void run_startup_commands() {
         try {
             ship_env.command = pt.get<std::string>("system_exec.command_" + std::to_string(current_command_number));
             system_command_vm();
-        } catch(const boost::property_tree::ptree_bad_path&) {
+        } catch(const boost::property_tree::ptree_error& e) {
             system_exec_commands_left = false;
         }
 
@@ -51,7 +51,7 @@ void run_startup_commands() {
         try {
             ship_env.command = pt.get<std::string>("exec.command_" + std::to_string(current_command_number));
             exec_command_vm();
-        } catch(const boost::property_tree::ptree_bad_path&) {
+        } catch(const boost::property_tree::ptree_error& e) {
             exec_commands_left = false;
         } 
 
@@ -164,7 +164,7 @@ void start_vm() {
         ship_env.command = "nohup xpra attach ssh://" + username + ":" + password + "@" + find_network_address_vm() + "/100 > /tmp/xpra_attach.log 2>&1 & disown";
         attach_xpra();
 
-    } catch(const boost::property_tree::ptree_bad_path&) {
+    } catch(const boost::property_tree::ptree_error& e) {
         std::cout << "This VM cannot perform application forwarding because the credentials are not set correctly. Please reference the documentation to add the credentials if you believe Xpra is already set up for application forwarding, or set it up manually if nothing is configured yet." << std::endl;
     }
 }
@@ -892,8 +892,8 @@ void find_vm_package_manager() {
         ship_env.package_manager_name = pt.get<std::string>("system.package_manager");
         std::cout << "Found package manager in the VM config" << std::endl;
 
-    } catch(const boost::property_tree::ptree_bad_path&) {
-        std::cout << "Package manager was not found in the config,trying to finding the package manager manually" << std::endl;
+    } catch(const boost::property_tree::ptree_error& e) {
+        std::cout << "Package manager was not found in the config,trying to find the package manager manually" << std::endl;
         std::string parameters = ship_env.command;
 
         for (const auto& package_manager : package_managers) {
