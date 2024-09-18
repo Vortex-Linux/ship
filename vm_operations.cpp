@@ -39,8 +39,8 @@ void run_startup_commands() {
 
     while(system_exec_commands_left || exec_commands_left) {
         try {
-            std::string current_startup_command = pt.get<std::string>("system_exec.command_" + std::to_string(current_command_number));
-            system_command_vm(current_startup_command);
+            std::string current_startup_system_command = pt.get<std::string>("system_exec.command_" + std::to_string(current_command_number));
+            system_command_vm(current_startup_system_command);
         } catch(const boost::property_tree::ptree_error& e) {
             system_exec_commands_left = false;
         }
@@ -48,8 +48,8 @@ void run_startup_commands() {
         sleep(1);
 
         try {
-            ship_env.command = pt.get<std::string>("exec.command_" + std::to_string(current_command_number));
-            exec_command_vm();
+          std::string current_startup_exec_command = pt.get<std::string>("exec.command_" + std::to_string(current_command_number));
+            exec_command_vm(current_startup_exec_command);
         } catch(const boost::property_tree::ptree_error& e) {
             exec_commands_left = false;
         } 
@@ -154,8 +154,8 @@ void start_vm() {
             return;
         }
 
-        ship_env.command = "xpra start :100";
-        exec_command_vm(); 
+        std::string start_xpra_server_cmd = "xpra start :100";
+        exec_command_vm(start_xpra_server_cmd); 
 
         std::string username = pt.get<std::string>("credentials.username");
         std::string password = pt.get<std::string>("credentials.password");
@@ -787,8 +787,8 @@ void configure_vm() {
 
             run_startup_commands();
 
-            ship_env.command = "apt update";
-            exec_command_vm();
+            std::string apt_update_cmd = "apt update";
+            exec_command_vm(apt_update_cmd);
             return;
         case TestedVM::ubuntu:
             return;
@@ -840,12 +840,12 @@ void system_command_vm(const std::string& command) {
     system_exec(run_command_cmd);
 }
 
-bool exec_command_vm() {
+bool exec_command_vm(const std::string& command) {
 
     std::string start_marker = "echo marker_" + std::to_string(rand());
     system_command_vm(start_marker);
 
-    system_command_vm(ship_env.command);
+    system_command_vm(command);
 
     std::string end_marker = "echo marker_" + std::to_string(rand());
     system_command_vm(end_marker); 
@@ -874,8 +874,8 @@ bool exec_command_vm() {
 }
 
 bool check_vm_command_exists() {
-    ship_env.command += " --version > /dev/null 2>&1 && echo 0";
-    bool result = exec_command_vm();
+    std::string check_command_exists_cmd += " --version > /dev/null 2>&1 && echo 0";
+    bool result = exec_command_vm(check_command_exists_cmd);
     return result;
 } 
 
@@ -978,7 +978,7 @@ void exec_action_for_vm() {
             shutdown_vm();
             break;
         case ShipAction::EXEC:
-            exec_command_vm();
+            exec_command_vm(ship_env.command);
             break;
         case ShipAction::PACKAGE_DOWNLOAD:
         case ShipAction::PACKAGE_SEARCH:

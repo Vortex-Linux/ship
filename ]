@@ -181,27 +181,21 @@ void exec_package_manager_operations() {
         std::string package_manager_operation_cmd; 
 
         if (ship_env.action == ShipAction::PACKAGE_SEARCH) {
-            std::string package_manager_search_command = package_manager_commands.search_command;
-            package_manager_operation_cmd = package_manager_search_command + " " + ship_env.packages;
-
+            std::string search_command = commands.search_command;
+            package_manager_operation_cmd  = commands.search_command + " " + ship_env.packages + " " + ship_env.command;
         } else if (ship_env.action == ShipAction::PACKAGE_DOWNLOAD) {
-            std::string package_manager_install_command = package_manager_commands.install_command;
-            package_manager_operation_cmd = package_manager_install_command + " " + ship_env.packages;
-
+            package_manager_operation_cmd = commands.install_command + " " + ship_env.packages + " " + ship_env.command;
         } else if (ship_env.action == ShipAction::PACKAGE_REMOVE) {
-            std::string package_manager_remove_command = package_manager_commands.remove_command;
-            package_manager_operation_cmd = package_manager_remove_command + " " + ship_env.packages;
-
+            package_manager_operation_cmd = commands.remove_command + " " + ship_env.packages + " " + ship_env.command;
         }
 
-        package_manager_operation_cmd = "yes | " + package_manager_operation_cmd;
-        ship_env.command =  package_manager_operation_cmd;
+        ship_env.command = "yes | " + ship_env.command;
 
         if(ship_env.mode==ShipMode::CONTAINER) {
             exec_command_container();
         } else {
             ship_env.action = ShipAction::EXEC;
-            exec_command_vm(package_manager_operation_cmd);
+            exec_command_vm();
         }
 
     } else {
