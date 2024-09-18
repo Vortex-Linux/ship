@@ -799,12 +799,14 @@ void configure_vm() {
             pt.put("credentials.hostname", "archlinux");
             pt.put("credentials.username", "arch");
             pt.put("credentials.password", "arch");
- 
+
+            pt.put("system.package_manager", "pacman");
+
             pt.put("xpra.enabled", true);
 
             pt.put("system_exec.command_1", "arch");
             pt.put("system_exec.command_2", "arch");
-            pt.put("system_exec.command_3", "export DISPLAY=:100");
+            pt.put("system_exec.command_3", "export display=:100");
 
             boost::property_tree::ini_parser::write_ini(find_settings_file(), pt);
 
@@ -883,14 +885,25 @@ bool check_vm_command_exists() {
 } 
 
 void find_vm_package_manager() {
-    std::string parameters = ship_env.command;
-    for (const auto& package_manager : package_managers) {
-        ship_env.command = package_manager.first;
-        if (check_vm_command_exists()) {
-            ship_env.package_manager_name = package_manager.first;             
-            std::cout << "Package manager found as " << ship_env.package_manager_name << " for container " << ship_env.name << "\n";
-            ship_env.command = parameters;
-            return;
+    try {
+        boost::property_tree::ini_parser::read_ini(find_settings_file(), pt);
+
+        std::cout << "Checking for package manager in the VM config" << std::endl;
+        ship_env.package_manager_name = pt.get<std::string>("system.package_manager");
+        std::cout << "Found package manager in the VM config" << std::endl;
+
+    } catch(const boost::property_tree::ptree_bad_path&) {
+        std::cout << "Package manager was not found in the config,trying to finding the package manager manually" << std::endl;
+        std::string parameters = ship_env.command;
+
+        for (const auto& package_manager : package_managers) {
+            ship_env.command = package_manager.first;
+            if (check_vm_command_exists()) {
+                ship_env.package_manager_name = package_manager.first;             
+                std::cout << "Package manager found as " << ship_env.package_manager_name << " for container " << ship_env.name << std::endl;
+                ship_env.command = parameters;
+                return;
+            }
         }
     }
 }
