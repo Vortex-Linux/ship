@@ -10,8 +10,7 @@ void pass_password_to_tmux() {
         std::string root_password;     
         std::getline(std::cin, root_password); 
  
-        ship_env.command = root_password;
-        system_command_vm();
+        system_command_vm(root_password);
 
         sleep(1);
     }
@@ -40,8 +39,8 @@ void run_startup_commands() {
 
     while(system_exec_commands_left || exec_commands_left) {
         try {
-            ship_env.command = pt.get<std::string>("system_exec.command_" + std::to_string(current_command_number));
-            system_command_vm();
+            std::string current_startup_command = pt.get<std::string>("system_exec.command_" + std::to_string(current_command_number));
+            system_command_vm(current_startup_command);
         } catch(const boost::property_tree::ptree_error& e) {
             system_exec_commands_left = false;
         }
@@ -139,8 +138,8 @@ void start_vm() {
     std::string create_tmux_session_cmd = "tmux new -d -s " + ship_env.name;
     system_exec(create_tmux_session_cmd);
 
-    ship_env.command = "virsh console " + ship_env.name;
-    system_command_vm();
+    std::string vm_console_cmd = "virsh console " + ship_env.name;
+    system_command_vm(vm_console_cmd);
 
     pass_password_to_tmux();
 
@@ -836,24 +835,20 @@ void configure_vm() {
     }
 }
 
-void system_command_vm() {
-    std::string run_cmd = "tmux send-keys -t " + ship_env.name + " '" + ship_env.command + "' C-m";
-    system_exec(run_cmd);
+void system_command_vm(const std::string& command) {
+    std::string run_command_cmd = "tmux send-keys -t " + ship_env.name + " '" + command + "' C-m";
+    system_exec(run_command_cmd);
 }
 
 bool exec_command_vm() {
-    std::string run_cmd = ship_env.command;
 
     std::string start_marker = "echo marker_" + std::to_string(rand());
-    ship_env.command = start_marker;
-    system_command_vm();
+    system_command_vm(start_marker);
 
-    ship_env.command = run_cmd;
-    system_command_vm();
+    system_command_vm(ship_env.command);
 
     std::string end_marker = "echo marker_" + std::to_string(rand());
-    ship_env.command = end_marker;
-    system_command_vm(); 
+    system_command_vm(end_marker); 
 
     std::string capture_cmd = "tmux capture-pane -t " + ship_env.name + " -pS - | tail -n 2 | head -n 1";
 
