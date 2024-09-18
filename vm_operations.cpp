@@ -893,7 +893,8 @@ void find_vm_package_manager() {
         std::cout << "Found package manager in the VM config" << std::endl;
 
     } catch(const boost::property_tree::ptree_error& e) {
-        std::cout << "Package manager was not found in the config,trying to find the package manager manually" << std::endl;
+        std::cout << "Package manager was not found in the config, trying to find the package manager manually. This might take a few moments..." << std::endl;
+
         std::string parameters = ship_env.command;
 
         for (const auto& package_manager : package_managers) {
