@@ -134,7 +134,7 @@ void pass_password_to_tmux();
 void run_startup_commands();
 void wait_for_vm_ready();
 std::string find_network_address_vm();
-void attach_xpra();
+void attach_xpra(const std::string &username,const std::string &password);
 void start_vm();
 void restart_vm();
 std::string list_vm();

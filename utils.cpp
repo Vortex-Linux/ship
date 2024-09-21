@@ -104,8 +104,8 @@ std::string list_container() {
 }
 
 std::string get_vm_state(const std::string &vm_name) {
-    ship_env.command = "virsh domstate " + vm_name;
-    return trim_trailing_whitespaces(exec(ship_env.command));
+    std::string get_vm_state_cmd = "virsh domstate " + vm_name;
+    return trim_trailing_whitespaces(exec(get_vm_state_cmd));
 }
 
 std::vector<int> extract_numbers_with_prefix(const std::string& result,const std::string& prefix) {

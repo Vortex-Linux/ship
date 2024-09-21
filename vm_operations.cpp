@@ -61,11 +61,11 @@ void run_startup_commands() {
 }
 
 std::string find_network_address_vm() {
-    ship_env.command = "virsh domifaddr " + ship_env.name + " | awk '{print $4}' | cut -d'/' -f1 | tail -n 2";
-    return trim_trailing_whitespaces(exec(ship_env.command)); 
+    std::string find_network_address_vm_cmd = "virsh domifaddr " + ship_env.name + " | awk '{print $4}' | cut -d'/' -f1 | tail -n 2";
+    return trim_trailing_whitespaces(exec(find_network_address_vm_cmd)); 
 }
 
-void attach_xpra() {
+void attach_xpra(const std::string &username,const std::string &password) {
     int max_retries = 5; 
     int delay = 10;
     int attempt = 1;
@@ -74,11 +74,14 @@ void attach_xpra() {
 
     std::string xpra_attach_success_message = "Attached to xpra server";
     std::string xpra_attach_failure_message = "removing unix domain socket";
+
+    std::string attach_xpra_server_cmd = "nohup xpra attach ssh://" + username + ":" + password + "@" + find_network_address_vm() + "/100 > /tmp/xpra_attach.log 2>&1 & disown";
+
     while (attempt <= max_retries) {
         std::string delete_old_xpra_attach_log_cmd = "rm /tmp/xpra_attach.log"; 
         system(delete_old_xpra_attach_log_cmd.c_str()); 
         
-        system(ship_env.command.c_str());
+        system(attach_xpra_server_cmd.c_str());
 
         std::string xpra_attach_log_path = "/tmp/xpra_attach.log";
         if (wait_for_file(xpra_attach_log_path, 10) && wait_for_file_to_fill(xpra_attach_log_path, 10)) { 
@@ -132,8 +135,8 @@ void start_vm() {
 
     std::cout << "VM " << ship_env.name << " started successfully.\n";
 
-    ship_env.command = "tmux has-session -t " + ship_env.name + " && tmux kill-session -t " + ship_env.name + " || true";
-    system_exec(ship_env.command);
+    std::string kill_tmux_session_if_exist_cmd = "tmux has-session -t " + ship_env.name + " && tmux kill-session -t " + ship_env.name + " || true";
+    system_exec(kill_tmux_session_if_exist_cmd);
 
     std::string create_tmux_session_cmd = "tmux new -d -s " + ship_env.name;
     system_exec(create_tmux_session_cmd);
@@ -160,8 +163,7 @@ void start_vm() {
         std::string username = pt.get<std::string>("credentials.username");
         std::string password = pt.get<std::string>("credentials.password");
         
-        ship_env.command = "nohup xpra attach ssh://" + username + ":" + password + "@" + find_network_address_vm() + "/100 > /tmp/xpra_attach.log 2>&1 & disown";
-        attach_xpra();
+        attach_xpra(username,password);
 
     } catch(const boost::property_tree::ptree_error& e) {
         std::cout << "This VM cannot perform application forwarding because the credentials are not set correctly. Please reference the documentation to add the credentials if you believe Xpra is already set up for application forwarding, or set it up manually if nothing is configured yet." << std::endl;
@@ -268,8 +270,8 @@ void shutdown_vm() {
 }
 
 std::string get_vm_image_paths() {
-    ship_env.command = "virsh domblklist " + ship_env.name + " --details | awk '{print $4}' | tail -n +3 | head -n -1";
-    std::string image_paths = exec(ship_env.command);
+    std::string get_vm_image_paths_cmd = "virsh domblklist " + ship_env.name + " --details | awk '{print $4}' | tail -n +3 | head -n -1";
+    std::string image_paths = exec(get_vm_image_paths_cmd);
     return image_paths;
 }
 
@@ -282,12 +284,12 @@ void clean_vm_resources() {
 
     while (std::getline(stream, image_path)) {
         std::cout << "Deleting " << image_path << std::endl;
-        ship_env.command = "rm " + image_path;
-        system(ship_env.command.c_str());
+        std::string delete_vm_image_cmd = "rm " + image_path;
+        system(delete_vm_image_cmd.c_str());
     }
 
-    ship_env.command = "rm " + ship_lib_path + "settings/vm-settings/" + ship_env.name + ".ini";
-    system(ship_env.command.c_str());
+    std::string delete_vm_settings_cmd = "rm " + ship_lib_path + "settings/vm-settings/" + ship_env.name + ".ini";
+    system(delete_vm_settings_cmd.c_str());
 
     std::cout << "Successfully deleted all resources which are not needed anymore." << std::endl;;
 }
@@ -406,7 +408,7 @@ std::string generate_vm_xml() {
     <type arch='x86_64' machine='pc-i440fx-2.9'>hvm</type>
     <boot dev='hd'/>
     <boot dev='cdrom'/>
-    <kernel commandLine="quiet loglevel=0"/>
+    <kernel commandline="quiet loglevel=0"/>
   </os>
   <features>
     <acpi/>
@@ -507,8 +509,8 @@ std::string generate_vm_xml() {
     xml_file << vm_xml.str();
     xml_file.close();
 
-    ship_env.command = "touch " + ship_lib_path + "settings/vm-settings/" + ship_env.name + ".ini";
-    system_exec(ship_env.command);
+    std::string create_vm_settings_cmd = "touch " + ship_lib_path + "settings/vm-settings/" + ship_env.name + ".ini";
+    system_exec(create_vm_settings_cmd);
 
     return xml_filename;
 }
@@ -887,14 +889,11 @@ void find_vm_package_manager() {
     } catch(const boost::property_tree::ptree_error& e) {
         std::cout << "Package manager was not found in the config, trying to find the package manager manually. This might take a few moments..." << std::endl;
 
-        std::string parameters = ship_env.command;
-
         for (const auto& package_manager : package_managers) {
             std::string package_manager_name = package_manager.first;
             if (check_vm_command_exists(package_manager_name)) {
                 ship_env.package_manager_name = package_manager.first;             
                 std::cout << "Package manager found as " << ship_env.package_manager_name << " for container " << ship_env.name << std::endl;
-                ship_env.command = parameters;
                 return;
             }
         }
