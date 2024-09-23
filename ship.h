@@ -1,30 +1,7 @@
 #ifndef SHIP_H
 #define SHIP_H
 
-#include <iostream>
-#include <thread>
-#include <cstdlib>
-#include <cstring>
-#include <string>
-#include <climits>
-#include <fstream>
-#include <regex>
-#include <vector>
-#include <algorithm>
-#include <stdexcept>
-#include <memory>
-#include <chrono>
-#include <array>
-#include <unordered_map>
-#include <map>
-#include <sstream>
-#include <unistd.h>
-#include <iomanip>
-#include <random>
-#include <sys/stat.h>
-#include <boost/property_tree/ptree.hpp>
-#include <boost/property_tree/ini_parser.hpp>
-#include <boost/program_options.hpp>
+#include "headers.h" 
 
 extern boost::property_tree::ptree pt;
 
@@ -113,6 +90,7 @@ extern std::string ship_lib_path;
 
 extern ShipEnviornment ship_env;
 
+// Function declarations...
 void show_help();
 std::string find_settings_file();
 std::string trim_trailing_whitespaces(const std::string& str);
