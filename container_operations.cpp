@@ -267,9 +267,9 @@ void view_container() {
     system_exec(cmd);
 }
 
-void exec_command_container() {
-    std::cout << ship_env.command; 
-    std::string cmd = "distrobox enter " + ship_env.name + " -- " + ship_env.command;
+void exec_command_container(const std::string& command) {
+    std::cout << command; 
+    std::string cmd = "distrobox enter " + ship_env.name + " -- " + command;
     system_exec(cmd);
 }
 
@@ -349,7 +349,7 @@ void exec_action_for_container() {
             stop_container();
             break;
         case ShipAction::EXEC:
-            exec_command_container();
+            exec_command_container(ship_env.command);
             break;
         case ShipAction::PACKAGE_DOWNLOAD:
         case ShipAction::PACKAGE_SEARCH:

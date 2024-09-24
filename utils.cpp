@@ -104,8 +104,8 @@ std::string list_container() {
 }
 
 std::string get_vm_state(const std::string &vm_name) {
-    ship_env.command = "virsh domstate " + vm_name;
-    return trim_trailing_whitespaces(exec(ship_env.command));
+    std::string get_vm_state_cmd = "virsh domstate " + vm_name;
+    return trim_trailing_whitespaces(exec(get_vm_state_cmd));
 }
 
 std::vector<int> extract_numbers_with_prefix(const std::string& result,const std::string& prefix) {
@@ -176,23 +176,31 @@ void exec_package_manager_operations() {
     auto it = package_managers.find(ship_env.package_manager_name);
 
     if (it != package_managers.end()) {
-        const PackageManagerCommands& commands = it->second;
+        const PackageManagerCommands& package_manager_commands = it->second;
+
+        std::string package_manager_operation_cmd; 
 
         if (ship_env.action == ShipAction::PACKAGE_SEARCH) {
-            ship_env.command = commands.search_command + " " + ship_env.packages + " " + ship_env.command;
+            std::string package_manager_search_command = package_manager_commands.search_command;
+            package_manager_operation_cmd = package_manager_search_command + " " + ship_env.packages;
+
         } else if (ship_env.action == ShipAction::PACKAGE_DOWNLOAD) {
-            ship_env.command = commands.install_command + " " + ship_env.packages + " " + ship_env.command;
+            std::string package_manager_install_command = package_manager_commands.install_command;
+            package_manager_operation_cmd = package_manager_install_command + " " + ship_env.packages;
+
         } else if (ship_env.action == ShipAction::PACKAGE_REMOVE) {
-            ship_env.command = commands.remove_command + " " + ship_env.packages + " " + ship_env.command;
+            std::string package_manager_remove_command = package_manager_commands.remove_command;
+            package_manager_operation_cmd = package_manager_remove_command + " " + ship_env.packages;
+
         }
 
-        ship_env.command = "yes | " + ship_env.command;
+        package_manager_operation_cmd = "yes | " + package_manager_operation_cmd;
 
         if(ship_env.mode==ShipMode::CONTAINER) {
-            exec_command_container();
+            exec_command_container(package_manager_operation_cmd);
         } else {
             ship_env.action = ShipAction::EXEC;
-            exec_command_vm();
+            exec_command_vm(package_manager_operation_cmd);
         }
 
     } else {

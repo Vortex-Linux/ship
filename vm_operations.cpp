@@ -10,8 +10,7 @@ void pass_password_to_tmux() {
         std::string root_password;     
         std::getline(std::cin, root_password); 
  
-        ship_env.command = root_password;
-        system_command_vm();
+        system_command_vm(root_password);
 
         sleep(1);
     }
@@ -40,18 +39,18 @@ void run_startup_commands() {
 
     while(system_exec_commands_left || exec_commands_left) {
         try {
-            ship_env.command = pt.get<std::string>("system_exec.command_" + std::to_string(current_command_number));
-            system_command_vm();
-        } catch(const boost::property_tree::ptree_bad_path&) {
+            std::string current_startup_system_command = pt.get<std::string>("system_exec.command_" + std::to_string(current_command_number));
+            system_command_vm(current_startup_system_command);
+        } catch(const boost::property_tree::ptree_error& e) {
             system_exec_commands_left = false;
         }
 
         sleep(1);
 
         try {
-            ship_env.command = pt.get<std::string>("exec.command_" + std::to_string(current_command_number));
-            exec_command_vm();
-        } catch(const boost::property_tree::ptree_bad_path&) {
+          std::string current_startup_exec_command = pt.get<std::string>("exec.command_" + std::to_string(current_command_number));
+            exec_command_vm(current_startup_exec_command);
+        } catch(const boost::property_tree::ptree_error& e) {
             exec_commands_left = false;
         } 
 
@@ -62,11 +61,11 @@ void run_startup_commands() {
 }
 
 std::string find_network_address_vm() {
-    ship_env.command = "virsh domifaddr " + ship_env.name + " | awk '{print $4}' | cut -d'/' -f1 | tail -n 2";
-    return trim_trailing_whitespaces(exec(ship_env.command)); 
+    std::string find_network_address_vm_cmd = "virsh domifaddr " + ship_env.name + " | awk '{print $4}' | cut -d'/' -f1 | tail -n 2";
+    return trim_trailing_whitespaces(exec(find_network_address_vm_cmd)); 
 }
 
-void attach_xpra() {
+void attach_xpra(const std::string &username,const std::string &password) {
     int max_retries = 5; 
     int delay = 10;
     int attempt = 1;
@@ -75,11 +74,14 @@ void attach_xpra() {
 
     std::string xpra_attach_success_message = "Attached to xpra server";
     std::string xpra_attach_failure_message = "removing unix domain socket";
+
+    std::string attach_xpra_server_cmd = "nohup xpra attach ssh://" + username + ":" + password + "@" + find_network_address_vm() + "/100 > /tmp/xpra_attach.log 2>&1 & disown";
+
     while (attempt <= max_retries) {
         std::string delete_old_xpra_attach_log_cmd = "rm /tmp/xpra_attach.log"; 
         system(delete_old_xpra_attach_log_cmd.c_str()); 
         
-        system(ship_env.command.c_str());
+        system(attach_xpra_server_cmd.c_str());
 
         std::string xpra_attach_log_path = "/tmp/xpra_attach.log";
         if (wait_for_file(xpra_attach_log_path, 10) && wait_for_file_to_fill(xpra_attach_log_path, 10)) { 
@@ -133,14 +135,14 @@ void start_vm() {
 
     std::cout << "VM " << ship_env.name << " started successfully.\n";
 
-    ship_env.command = "tmux has-session -t " + ship_env.name + " && tmux kill-session -t " + ship_env.name + " || true";
-    system_exec(ship_env.command);
+    std::string kill_tmux_session_if_exist_cmd = "tmux has-session -t " + ship_env.name + " && tmux kill-session -t " + ship_env.name + " || true";
+    system_exec(kill_tmux_session_if_exist_cmd);
 
     std::string create_tmux_session_cmd = "tmux new -d -s " + ship_env.name;
     system_exec(create_tmux_session_cmd);
 
-    ship_env.command = "virsh console " + ship_env.name;
-    system_command_vm();
+    std::string vm_console_cmd = "virsh console " + ship_env.name;
+    system_command_vm(vm_console_cmd);
 
     pass_password_to_tmux();
 
@@ -155,16 +157,15 @@ void start_vm() {
             return;
         }
 
-        ship_env.command = "xpra start :100";
-        exec_command_vm(); 
+        std::string start_xpra_server_cmd = "xpra start :100";
+        exec_command_vm(start_xpra_server_cmd); 
 
         std::string username = pt.get<std::string>("credentials.username");
         std::string password = pt.get<std::string>("credentials.password");
         
-        ship_env.command = "nohup xpra attach ssh://" + username + ":" + password + "@" + find_network_address_vm() + "/100 > /tmp/xpra_attach.log 2>&1 & disown";
-        attach_xpra();
+        attach_xpra(username,password);
 
-    } catch(const boost::property_tree::ptree_bad_path&) {
+    } catch(const boost::property_tree::ptree_error& e) {
         std::cout << "This VM cannot perform application forwarding because the credentials are not set correctly. Please reference the documentation to add the credentials if you believe Xpra is already set up for application forwarding, or set it up manually if nothing is configured yet." << std::endl;
     }
 }
@@ -269,8 +270,8 @@ void shutdown_vm() {
 }
 
 std::string get_vm_image_paths() {
-    ship_env.command = "virsh domblklist " + ship_env.name + " --details | awk '{print $4}' | tail -n +3 | head -n -1";
-    std::string image_paths = exec(ship_env.command);
+    std::string get_vm_image_paths_cmd = "virsh domblklist " + ship_env.name + " --details | awk '{print $4}' | tail -n +3 | head -n -1";
+    std::string image_paths = exec(get_vm_image_paths_cmd);
     return image_paths;
 }
 
@@ -283,12 +284,12 @@ void clean_vm_resources() {
 
     while (std::getline(stream, image_path)) {
         std::cout << "Deleting " << image_path << std::endl;
-        ship_env.command = "rm " + image_path;
-        system(ship_env.command.c_str());
+        std::string delete_vm_image_cmd = "rm " + image_path;
+        system(delete_vm_image_cmd.c_str());
     }
 
-    ship_env.command = "rm " + ship_lib_path + "settings/vm-settings/" + ship_env.name + ".ini";
-    system(ship_env.command.c_str());
+    std::string delete_vm_settings_cmd = "rm " + ship_lib_path + "settings/vm-settings/" + ship_env.name + ".ini";
+    system(delete_vm_settings_cmd.c_str());
 
     std::cout << "Successfully deleted all resources which are not needed anymore." << std::endl;;
 }
@@ -407,7 +408,7 @@ std::string generate_vm_xml() {
     <type arch='x86_64' machine='pc-i440fx-2.9'>hvm</type>
     <boot dev='hd'/>
     <boot dev='cdrom'/>
-    <kernel commandLine="quiet loglevel=0"/>
+    <kernel commandline="quiet loglevel=0"/>
   </os>
   <features>
     <acpi/>
@@ -508,8 +509,8 @@ std::string generate_vm_xml() {
     xml_file << vm_xml.str();
     xml_file.close();
 
-    ship_env.command = "touch " + ship_lib_path + "settings/vm-settings/" + ship_env.name + ".ini";
-    system_exec(ship_env.command);
+    std::string create_vm_settings_cmd = "touch " + ship_lib_path + "settings/vm-settings/" + ship_env.name + ".ini";
+    system_exec(create_vm_settings_cmd);
 
     return xml_filename;
 }
@@ -787,9 +788,6 @@ void configure_vm() {
             boost::property_tree::ini_parser::write_ini(find_settings_file(), pt);
 
             run_startup_commands();
-
-            ship_env.command = "apt update";
-            exec_command_vm();
             return;
         case TestedVM::ubuntu:
             return;
@@ -799,12 +797,14 @@ void configure_vm() {
             pt.put("credentials.hostname", "archlinux");
             pt.put("credentials.username", "arch");
             pt.put("credentials.password", "arch");
- 
+
+            pt.put("system.package_manager", "pacman");
+
             pt.put("xpra.enabled", true);
 
             pt.put("system_exec.command_1", "arch");
             pt.put("system_exec.command_2", "arch");
-            pt.put("system_exec.command_3", "export DISPLAY=:100");
+            pt.put("system_exec.command_3", "export display=:100");
 
             boost::property_tree::ini_parser::write_ini(find_settings_file(), pt);
 
@@ -834,24 +834,20 @@ void configure_vm() {
     }
 }
 
-void system_command_vm() {
-    std::string run_cmd = "tmux send-keys -t " + ship_env.name + " '" + ship_env.command + "' C-m";
-    system_exec(run_cmd);
+void system_command_vm(const std::string& command) {
+    std::string run_command_cmd = "tmux send-keys -t " + ship_env.name + " '" + command + "' C-m";
+    system_exec(run_command_cmd);
 }
 
-bool exec_command_vm() {
-    std::string run_cmd = ship_env.command;
+bool exec_command_vm(const std::string& command) {
 
     std::string start_marker = "echo marker_" + std::to_string(rand());
-    ship_env.command = start_marker;
-    system_command_vm();
+    system_command_vm(start_marker);
 
-    ship_env.command = run_cmd;
-    system_command_vm();
+    system_command_vm(command);
 
     std::string end_marker = "echo marker_" + std::to_string(rand());
-    ship_env.command = end_marker;
-    system_command_vm(); 
+    system_command_vm(end_marker); 
 
     std::string capture_cmd = "tmux capture-pane -t " + ship_env.name + " -pS - | tail -n 2 | head -n 1";
 
@@ -876,21 +872,30 @@ bool exec_command_vm() {
     return false;
 }
 
-bool check_vm_command_exists() {
-    ship_env.command += " --version > /dev/null 2>&1 && echo 0";
-    bool result = exec_command_vm();
+bool check_vm_command_exists(const std::string& command) {
+    std::string check_command_exists_cmd = command + " --version > /dev/null 2>&1 && echo 0";
+    bool result = exec_command_vm(check_command_exists_cmd);
     return result;
 } 
 
 void find_vm_package_manager() {
-    std::string parameters = ship_env.command;
-    for (const auto& package_manager : package_managers) {
-        ship_env.command = package_manager.first;
-        if (check_vm_command_exists()) {
-            ship_env.package_manager_name = package_manager.first;             
-            std::cout << "Package manager found as " << ship_env.package_manager_name << " for container " << ship_env.name << "\n";
-            ship_env.command = parameters;
-            return;
+    try {
+        boost::property_tree::ini_parser::read_ini(find_settings_file(), pt);
+
+        std::cout << "Checking for package manager in the VM config" << std::endl;
+        ship_env.package_manager_name = pt.get<std::string>("system.package_manager");
+        std::cout << "Found package manager in the VM config" << std::endl;
+
+    } catch(const boost::property_tree::ptree_error& e) {
+        std::cout << "Package manager was not found in the config, trying to find the package manager manually. This might take a few moments..." << std::endl;
+
+        for (const auto& package_manager : package_managers) {
+            std::string package_manager_name = package_manager.first;
+            if (check_vm_command_exists(package_manager_name)) {
+                ship_env.package_manager_name = package_manager.first;             
+                std::cout << "Package manager found as " << ship_env.package_manager_name << " for container " << ship_env.name << std::endl;
+                return;
+            }
         }
     }
 }
@@ -969,7 +974,7 @@ void exec_action_for_vm() {
             shutdown_vm();
             break;
         case ShipAction::EXEC:
-            exec_command_vm();
+            exec_command_vm(ship_env.command);
             break;
         case ShipAction::PACKAGE_DOWNLOAD:
         case ShipAction::PACKAGE_SEARCH:

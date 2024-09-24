@@ -1,30 +1,7 @@
 #ifndef SHIP_H
 #define SHIP_H
 
-#include <iostream>
-#include <thread>
-#include <cstdlib>
-#include <cstring>
-#include <string>
-#include <climits>
-#include <fstream>
-#include <regex>
-#include <vector>
-#include <algorithm>
-#include <stdexcept>
-#include <memory>
-#include <chrono>
-#include <array>
-#include <unordered_map>
-#include <map>
-#include <sstream>
-#include <unistd.h>
-#include <iomanip>
-#include <random>
-#include <sys/stat.h>
-#include <boost/property_tree/ptree.hpp>
-#include <boost/property_tree/ini_parser.hpp>
-#include <boost/program_options.hpp>
+#include "headers.h" 
 
 extern boost::property_tree::ptree pt;
 
@@ -113,6 +90,7 @@ extern std::string ship_lib_path;
 
 extern ShipEnviornment ship_env;
 
+// Function declarations...
 void show_help();
 std::string find_settings_file();
 std::string trim_trailing_whitespaces(const std::string& str);
@@ -134,7 +112,7 @@ void pass_password_to_tmux();
 void run_startup_commands();
 void wait_for_vm_ready();
 std::string find_network_address_vm();
-void attach_xpra();
+void attach_xpra(const std::string &username,const std::string &password);
 void start_vm();
 void restart_vm();
 std::string list_vm();
@@ -164,9 +142,9 @@ void view_vm();
 void pause_vm();
 void resume_vm();
 void shutdown_vm();
-void system_command_vm();
-bool exec_command_vm();
-bool check_vm_command_exists();
+void system_command_vm(const std::string& command);
+bool exec_command_vm(const std::string& command);
+bool check_vm_command_exists(const std::string& command);
 void find_vm_package_manager();
 void start_container();
 std::string list_container();
@@ -177,7 +155,7 @@ void stop_container();
 void upgrade_container();
 void view_container();
 void stop_container();
-void exec_command_container();
+void exec_command_container(const std::string& command);
 bool check_container_command_exists(const std::string& command);
 void find_container_package_manager();
 void process_operands(int argc, char *argv[]);
