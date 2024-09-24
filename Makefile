@@ -8,7 +8,7 @@ CXXFLAGS := -std=c++11 -Wall -Wextra -I /usr/include/boost
 LDFLAGS := -L /usr/lib -lboost_system -lboost_filesystem -lboost_program_options
 
 # Source files
-SRCS := ship.cpp utils.cpp vm_operations.cpp container_operations.cpp 
+SRCS := main.cpp ship.cpp utils.cpp vm_operations.cpp container_operations.cpp 
 
 # Object files
 OBJS := $(SRCS:.cpp=.o)
