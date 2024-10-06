@@ -141,6 +141,9 @@ void start_vm() {
     std::string create_tmux_session_cmd = "tmux new -d -s " + ship_env.name;
     system_exec(create_tmux_session_cmd);
 
+    std::string set_virsh_system_uri_cmd = "export LIBVIRT_DEFAULT_URI=qemu:///system";
+    system_command_vm(set_virsh_system_uri_cmd); 
+
     std::string vm_console_cmd = "virsh console " + ship_env.name;
     system_command_vm(vm_console_cmd);
 
