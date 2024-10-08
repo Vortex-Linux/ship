@@ -171,5 +171,6 @@ bool file_exists(const std::string& file_path);
 bool wait_for_file(const std::string& file_path, int timeout_seconds);
 bool wait_for_file_to_fill(const std::string& file_path, int timeout_seconds);
 bool is_file_non_empty(const std::string& file_path);
+bool move_file(const std::string& source, const std::string& destination);
 #endif // SHIP_H
 

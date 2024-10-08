@@ -904,9 +904,16 @@ void find_vm_package_manager() {
 }
 
 void send_vm_file() {
-    std::string get_vm_disk_image_cmd = "virsh domblklist " + ship_env.name + " --details | awk '/source file/ {print $3}' | grep '.qcow2$'";
-    std::string result = exec(get_vm_disk_image_cmd);
-    std::string send_vm_cmd = "croc send " + get_absolute_path(result);
+    std::string get_vm_disk_image_cmd = "virsh domblklist " + ship_env.name + " --details | awk '/source file/ {print $3}'";
+    std::string disk_images = exec(get_vm_disk_image_cmd);
+
+    std::string config_file = find_settings_file();
+
+    std::string tar_file = "/tmp/" + ship_env.name + ".tar.gz";
+    std::string create_tar_cmd = "tar -czf " + tar_file + " " + disk_images + " " + config_file;
+    system_exec(create_tar_cmd);
+
+    std::string send_vm_cmd = "croc send " + tar_file;
     std::cout << exec(send_vm_cmd) << std::endl;
 }
 
@@ -916,28 +923,30 @@ void receive_vm_file() {
     std::getline(std::cin, code);
 
     std::string set_croc_secret_cmd = "export CROC_SECRET=" + code;
-    std::cout << exec(set_croc_secret_cmd) << std::endl;
-
-    std::string source_local = ship_lib_path + "images/disk-images/";
-
-    std::string receive_vm_cmd = "croc recv -o " + source_local;
+    std::cout << exec(set_croc_secret_cmd) << std::endl; 
+    
+    std::string receive_vm_cmd = "croc recv -o /tmp/";
     std::cout << exec(receive_vm_cmd) << std::endl;
 
-    std::string find_vm_image_cmd = "find " + source_local + " -type f -exec ls -t1 {} + | head -1";
-    std::string vm_image = exec(find_vm_image_cmd);
+    std::string tar_file = "find /tmp/ -type f -name '*.tar.gz' -exec ls -t1 {} + | head -1";
+    std::string extract_tar_cmd = "tar -xzf " + tar_file + " -C /tmp/"; 
+    system_exec(extract_tar_cmd);
 
-    size_t extension_starting_position = source_local.find(".");
-    std::string image_name = source_local.substr(0, extension_starting_position);
+    std::string extracted_tar_file = "find /tmp/ -mindepth 1 -maxdepth 1 -type d -exec ls -t1 {} + | head -1 | sed 's/:$//'";
+    system_exec(extracted_tar_file);
 
-    std::cout << "Please specify the name of this VM (leaving this blank will set the name to the name given by the sender which is " << image_name << "): ";
-    std::string name_given;
-    std::getline(std::cin, name_given);
-    if (!name_given.empty()) {
-        ship_env.name = name_given;
-    } else {
-        ship_env.name = image_name;
+    std::string list_ini_files_cmd = "ls | grep '\\.ini$'";
+    std::string raw_ini_files_output = exec(list_ini_files_cmd);
+    std::vector<std::string> parsed_ini_files = split_string_by_line(raw_ini_files_output);
+    for (const auto& file : parsed_ini_files) {
+        move_file(); 
     }
-    create_vm();
+
+
+
+    std::string list_received_iso_images = "ls | \.iso$"
+    std::string list_received_qcow_images = "ls | grep '\\.qcow2?$'";
+
 }
 
 void exec_action_for_vm() {

@@ -295,3 +295,8 @@ bool wait_for_file_to_fill(const std::string& file_path, int timeout_seconds) {
     }
     return false;
 }
+
+bool move_file(const std::string& source, const std::string& destination) {
+    std::string move_file_cmd = "mv " + source + " " + destination;
+    system_exec(command);
+}
