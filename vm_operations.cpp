@@ -932,21 +932,40 @@ void receive_vm_file() {
     std::string extract_tar_cmd = "tar -xzf " + tar_file + " -C /tmp/"; 
     system_exec(extract_tar_cmd);
 
-    std::string extracted_tar_file = "find /tmp/ -mindepth 1 -maxdepth 1 -type d -exec ls -t1 {} + | head -1 | sed 's/:$//'";
-    system_exec(extracted_tar_file);
+    std::string extracted_tar_folder = "find /tmp/ -mindepth 1 -maxdepth 1 -type d -exec ls -t1 {} + | head -1 | sed 's/:$//'";
+    system_exec(extracted_tar_folder);
+    
+    tar_folder_absolute_path = "/tmp/" + extracted_tar_folder;
+
+    std::string get_xml_file_cmd = "ls | grep '\\.xml$' | head -n 1 ";
+    move_file(extracted_tar_folder + xml_file, "/tmp/");
+
+    std::string list_iso_files_cmd = "ls | grep '\\.iso$'";
+    std::string raw_iso_files_output = exec(list_iso_files_cmd);
+    std::vector<std::string> parsed_iso_files = split_string_by_line(raw_iso_files_output);
+
+    for (const auto& file : parsed_iso_files) {
+        move_file(extracted_tar_folder + file, ship_lib_path + "images/iso-images/"); 
+    }
+
+    std::string list_qcow_files_cmd = "ls | grep '\\.qcow2?$'";
+    std::string raw_qcow_files_output = exec(list_qcow_files_cmd);
+    std::vector<std::string> parsed_qcow_files = split_string_by_line(raw_qcow_files_output);
+
+    for (const auto& file : parsed_qcow_files) {
+        move_file(extracted_tar_folder + file, ship_lib_path + "images/disk-images/"); 
+    } 
 
     std::string list_ini_files_cmd = "ls | grep '\\.ini$'";
     std::string raw_ini_files_output = exec(list_ini_files_cmd);
     std::vector<std::string> parsed_ini_files = split_string_by_line(raw_ini_files_output);
+
     for (const auto& file : parsed_ini_files) {
-        move_file(); 
+        move_file(extracted_tar_folder + file, ship_lib_path + "settings/vm"); 
     }
+    create_vm();
 
-
-
-    std::string list_received_iso_images = "ls | \.iso$"
-    std::string list_received_qcow_images = "ls | grep '\\.qcow2?$'";
-
+    create_vm();
 }
 
 void exec_action_for_vm() {
