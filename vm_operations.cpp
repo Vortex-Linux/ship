@@ -378,6 +378,17 @@ void create_vm() {
     if (ship_env.source_local.find_last_of(".") != std::string::npos) {
         std::string extension = ship_env.source_local.substr(ship_env.source_local.find_last_of("."));
 
+        if (extension == ".xz") {
+            std::cout << "Decompressing the downloaded .xz file" << "\n";
+            std::string decompress_cmd = "unxz " + ship_env.source_local;
+            system_exec(decompress_cmd);
+            
+            ship_env.source_local = ship_env.source_local.substr(0, ship_env.source_local.length() - 3); 
+            std::cout << "Decompressed file path is " << ship_env.source_local << "\n";
+
+            extension = ship_env.source_local.substr(ship_env.source_local.find_last_of("."));
+        }
+
         if (extension == ".iso") {
             ship_env.iso_path = get_absolute_path(ship_env.source_local);
             create_disk_image();
@@ -540,16 +551,21 @@ void start_vm_with_confirmation_prompt() {
 }
 
 void get_iso_source() {
-    if(!ship_env.source.empty()) {
+    if (!ship_env.source.empty()) {
         std::cout << "Downloading iso to images" << "\n";
+        
         std::string download_cmd = "aria2c --dir " + ship_lib_path + "images/iso-images " + ship_env.source;
         system_exec(download_cmd);
+        
         std::cout << "Finding the path to the downloaded iso image" << "\n";
-        std::string find_latest_image_cmd = "find " + ship_lib_path + "images/iso-images  -type f -exec ls -t1 {} + | head -1";
+        
+        std::string find_latest_image_cmd = "find " + ship_lib_path + "images/iso-images -type f -exec ls -t1 {} + | head -1";
         ship_env.source_local = exec(find_latest_image_cmd);
+        
         std::cout << "Found the path as " << ship_env.source_local << "\n";
     }
 }
+
 void print_available_tested_vms() {
     std::cout << "The available tested and configured vms are: " << std::endl;
     std::cout << "tails" << std::endl;
@@ -935,9 +951,10 @@ void receive_vm_file() {
     std::string extracted_tar_folder = "find /tmp/ -mindepth 1 -maxdepth 1 -type d -exec ls -t1 {} + | head -1 | sed 's/:$//'";
     system_exec(extracted_tar_folder);
     
-    tar_folder_absolute_path = "/tmp/" + extracted_tar_folder;
+    std::string tar_folder_absolute_path = "/tmp/" + extracted_tar_folder;
 
-    std::string get_xml_file_cmd = "ls | grep '\\.xml$' | head -n 1 ";
+    std::string get_xml_file_cmd = "ls | grep '\\.xml$' | head -n 1";
+    std::string xml_file = exec(get_xml_file_cmd);
     move_file(extracted_tar_folder + xml_file, "/tmp/");
 
     std::string list_iso_files_cmd = "ls | grep '\\.iso$'";
