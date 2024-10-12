@@ -921,12 +921,23 @@ void find_vm_package_manager() {
 
 void send_vm_file() {
     std::string get_vm_disk_image_cmd = "virsh domblklist " + ship_env.name + " --details | awk '/source file/ {print $3}'";
-
     std::string disk_images = exec(get_vm_disk_image_cmd);
+
+    std::vector<std::string> disk_image_paths = split_string_by_line(disk_images);
+
+    std::string xml_file_path = "/tmp/" + ship_env.name + ".xml";
+    std::string get_xml_file_cmd = "virsh dumpxml " + ship_env.name + " > " + xml_file_path;
+    exec(get_xml_file_cmd); 
+
     std::string config_file = find_settings_file();
 
     std::string tar_file = "/tmp/" + ship_env.name + ".tar.gz";
-    std::string create_tar_cmd = "tar -czf " + tar_file + " \"" + disk_images + "\" \"" + config_file + "\"";
+
+    std::string create_tar_cmd = "tar -czf " + tar_file;
+    for (const auto& path : disk_image_paths) {
+        create_tar_cmd += " \"" + path + "\"";
+    }
+    create_tar_cmd += " \"" + xml_file_path + "\" \"" + config_file + "\"";
 
     system_exec(create_tar_cmd);
 
