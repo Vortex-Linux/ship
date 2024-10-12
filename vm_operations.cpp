@@ -921,12 +921,13 @@ void find_vm_package_manager() {
 
 void send_vm_file() {
     std::string get_vm_disk_image_cmd = "virsh domblklist " + ship_env.name + " --details | awk '/source file/ {print $3}'";
-    std::string disk_images = exec(get_vm_disk_image_cmd);
 
+    std::string disk_images = exec(get_vm_disk_image_cmd);
     std::string config_file = find_settings_file();
 
     std::string tar_file = "/tmp/" + ship_env.name + ".tar.gz";
-    std::string create_tar_cmd = "tar -czf " + tar_file + " " + disk_images + " " + config_file;
+    std::string create_tar_cmd = "tar -czf " + tar_file + " \"" + disk_images + "\" \"" + config_file + "\"";
+
     system_exec(create_tar_cmd);
 
     std::string send_vm_cmd = "croc send " + tar_file;
@@ -944,44 +945,42 @@ void receive_vm_file() {
     std::string receive_vm_cmd = "croc recv -o /tmp/";
     std::cout << exec(receive_vm_cmd) << std::endl;
 
-    std::string tar_file = "find /tmp/ -type f -name '*.tar.gz' -exec ls -t1 {} + | head -1";
-    std::string extract_tar_cmd = "tar -xzf " + tar_file + " -C /tmp/"; 
+    std::string find_tar_cmd = "find /tmp/ -type f -name '*.tar.gz' -exec ls -t1 {} + | head -1";
+    std::string tar_file = exec(find_tar_cmd); 
+
+    std::string extract_dir = "/tmp/" + ship_env.name + "/";
+    std::string create_dir_cmd = "mkdir -p " + extract_dir;
+    system_exec(create_dir_cmd); 
+
+    std::string extract_tar_cmd = "tar -xzf " + tar_file + " -C " + extract_dir; 
     system_exec(extract_tar_cmd);
-
-    std::string extracted_tar_folder = "find /tmp/ -mindepth 1 -maxdepth 1 -type d -exec ls -t1 {} + | head -1 | sed 's/:$//'";
-    system_exec(extracted_tar_folder);
-    
-    std::string tar_folder_absolute_path = "/tmp/" + extracted_tar_folder;
-
-    std::string get_xml_file_cmd = "ls | grep '\\.xml$' | head -n 1";
+ 
+    std::string get_xml_file_cmd = "ls " + extract_dir + " | grep '\\.xml$' | head -n 1";
     std::string xml_file = exec(get_xml_file_cmd);
-    move_file(extracted_tar_folder + xml_file, "/tmp/");
 
-    std::string list_iso_files_cmd = "ls | grep '\\.iso$'";
+    std::string list_iso_files_cmd = "ls " + extract_dir + " | grep '\\.iso$'";
     std::string raw_iso_files_output = exec(list_iso_files_cmd);
     std::vector<std::string> parsed_iso_files = split_string_by_line(raw_iso_files_output);
 
     for (const auto& file : parsed_iso_files) {
-        move_file(extracted_tar_folder + file, ship_lib_path + "images/iso-images/"); 
+        move_file(extract_dir + file, ship_lib_path + "images/iso-images/"); 
     }
 
-    std::string list_qcow_files_cmd = "ls | grep '\\.qcow2?$'";
+    std::string list_qcow_files_cmd = "ls " + extract_dir + " | grep '\\.qcow2?$'";
     std::string raw_qcow_files_output = exec(list_qcow_files_cmd);
     std::vector<std::string> parsed_qcow_files = split_string_by_line(raw_qcow_files_output);
 
     for (const auto& file : parsed_qcow_files) {
-        move_file(extracted_tar_folder + file, ship_lib_path + "images/disk-images/"); 
+        move_file(extract_dir + file, ship_lib_path + "images/disk-images/"); 
     } 
 
-    std::string list_ini_files_cmd = "ls | grep '\\.ini$'";
+    std::string list_ini_files_cmd = "ls " + extract_dir + " | grep '\\.ini$'";
     std::string raw_ini_files_output = exec(list_ini_files_cmd);
     std::vector<std::string> parsed_ini_files = split_string_by_line(raw_ini_files_output);
 
     for (const auto& file : parsed_ini_files) {
-        move_file(extracted_tar_folder + file, ship_lib_path + "settings/vm"); 
+        move_file(extract_dir + file, ship_lib_path + "settings/vm"); 
     }
-    create_vm();
-
     create_vm();
 }
 
