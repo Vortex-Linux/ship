@@ -87,7 +87,7 @@ void attach_xpra(const std::string &username,const std::string &password) {
         if (wait_for_file(xpra_attach_log_path, 10) && wait_for_file_to_fill(xpra_attach_log_path, 10)) { 
             bool xpra_attach_message_found = false;
             while (!xpra_attach_message_found) {
-                sleep(3);
+                sleep(5);
                 std::ifstream file(xpra_attach_log_path);
                 if (file.is_open()) {
                     std::string line; 
@@ -596,7 +596,7 @@ std::string get_tested_vm_link(const std::string &vm_name) {
     } else if (vm_name == "ubuntu") {
         return "";
     } else if (vm_name == "arch") {
-        return "https://github.com/Vortex-Linux/Arch-VM-Base/releases/download/v0.1.1/Arch-Linux-x86_64-basic.qcow2";
+        return "https://github.com/Vortex-Linux/Arch-VM-Base/releases/download/v0.1.2/archlinux.qcow2.xz";
     } else if (vm_name == "gentoo") {
         return "";
     } else if (vm_name == "fedora") {
@@ -756,7 +756,7 @@ void create_disk_image() {
     if (!check_file.good()) {
         std::cout << "Creating disk image at: " << ship_env.disk_image_path << std::endl;
 
-        std::string create_disk_cmd = "qemu-img create -f qcow2 -o preallocation=off -S 512 " + ship_env.disk_image_path + " 2T";
+        std::string create_disk_cmd = "qemu-img create -f qcow2 -o preallocation=off,cluster_size=512K " + ship_env.disk_image_path + " 2T";
         system_exec(create_disk_cmd);
     }
     check_file.close();
