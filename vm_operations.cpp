@@ -762,6 +762,27 @@ void create_disk_image() {
     check_file.close();
 }
 
+void create_compact_disk_image() {
+    std::string original_image_path = ship_lib_path + "images/disk-images/" + ship_env.name + ".qcow2";
+    std::string compact_image_path = "/tmp/" + ship_env.name + ".qcow2";
+
+    std::cout << "Creating compact disk image at: " << compact_image_path << std::endl;
+
+    std::string create_compact_disk_cmd = "qemu-img convert -f qcow2 -O qcow2 -o preallocation=metadata,cluster_size=512K " + original_image_path +  compact_image_path;
+    system_exec(create_compact_disk_cmd);
+    std::cout << "Successfully created compact disk image: " << compact_image_path << std::endl; 
+
+    std::cout << "Deleting the original disk image: " << original_image_path << std::endl;
+    std::string delete_original_image_cmd = "rm " + original_image_path;
+    system_exec(delete_original_image_cmd);
+
+    std::cout << "Moving compact disk image to original location: " << original_image_path << std::endl;
+    std::string move_compact_disk_cmd = "mv " + compact_image_path + " " + original_image_path;
+    system_exec(move_compact_disk_cmd);
+
+    std::cout << "Successfully replaced original disk image with compact version." << std::endl;
+}
+
 void generate_vm_name() {
     int next_vm_number = get_next_available_vm_number();
     ship_env.name = "vm" + std::to_string(next_vm_number);
@@ -1044,6 +1065,9 @@ void exec_action_for_vm() {
             break;
         case ShipAction::SEND:
             send_vm_file();
+            break;
+        case ShipAction::OPTIMIZE:
+            create_compact_disk_image();
             break;
         default: 
             std::cout << "Invalid action for VM.\n";

@@ -43,6 +43,7 @@ enum class ShipAction {
     RECEIVE,
     SEND,
     SHUTDOWN,
+    OPTIMIZE, 
 };
 
 // allows for using the << operator with shipaction
@@ -131,6 +132,7 @@ void tested_vm_information();
 void set_tested_vm(const std::string &vm_name);
 void get_tested_vm();
 void create_disk_image();
+void create_compact_disk_image();
 void set_memory_limit();
 void set_cpu_limit();
 std::string generate_vm_xml();
