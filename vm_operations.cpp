@@ -751,7 +751,7 @@ void get_tested_vm() {
 }
 
 void create_disk_image() {
-    ship_env.disk_image_path = ship_lib_path + "images/disk-images/" + ship_env.name + ".qcow2";
+    ship_env.disk_image_path = ship_lib_path + "images/disk-images/" + ship_env.name + generate_random_number(5) + ".qcow2";
     std::ifstream check_file(ship_env.disk_image_path);
     if (!check_file.good()) {
         std::cout << "Creating disk image at: " << ship_env.disk_image_path << std::endl;

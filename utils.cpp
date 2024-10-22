@@ -208,6 +208,21 @@ void exec_package_manager_operations() {
     }
 }
 
+int generate_random_number(int num_digits) {
+    if (num_digits <= 0) {
+        throw std::invalid_argument("Number of digits must be greater than 0");
+    }
+    
+    int min_value = static_cast<int>(std::pow(10, num_digits - 1));
+    int max_value = static_cast<int>(std::pow(10, num_digits)) - 1;
+
+    static std::random_device rd;
+    static std::mt19937 gen(rd());
+    std::uniform_int_distribution<> dis(min_value, max_value);
+    
+    return dis(gen);
+}
+
 std::string generate_mac_address() {
     std::ostringstream mac;
     std::random_device rd;
