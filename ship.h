@@ -168,7 +168,7 @@ bool is_user_in_group(const std::string& group);
 void add_user_to_group(const std::string& group);
 void restart_systemctl_service(const std::string& service_name);
 std::string get_absolute_path(const std::string &relative_path);
-int generate_random_number(int num_digits);
+std::string generate_random_number(int num_digits);
 std::string generate_mac_address();
 bool file_exists(const std::string& file_path);
 bool wait_for_file(const std::string& file_path, int timeout_seconds);

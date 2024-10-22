@@ -208,7 +208,7 @@ void exec_package_manager_operations() {
     }
 }
 
-int generate_random_number(int num_digits) {
+std::string generate_random_number(int num_digits) {
     if (num_digits <= 0) {
         throw std::invalid_argument("Number of digits must be greater than 0");
     }
@@ -218,9 +218,9 @@ int generate_random_number(int num_digits) {
 
     static std::random_device rd;
     static std::mt19937 gen(rd());
-    std::uniform_int_distribution<> dis(min_value, max_value);
-    
-    return dis(gen);
+    std::uniform_int_distribution<> dis(min_value, max_value); 
+
+    return std::to_string(dis(gen));
 }
 
 std::string generate_mac_address() {
