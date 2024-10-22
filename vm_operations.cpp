@@ -756,7 +756,7 @@ void create_disk_image() {
     if (!check_file.good()) {
         std::cout << "Creating disk image at: " << ship_env.disk_image_path << std::endl;
 
-        std::string create_disk_cmd = "qemu-img create -f qcow2 -o preallocation=off,cluster_size=512K " + ship_env.disk_image_path + " 2T";
+        std::string create_disk_cmd = "qemu-img create -f qcow2 -o preallocation=metadata,cluster_size=512K " + ship_env.disk_image_path + " 2T";
         system_exec(create_disk_cmd);
     }
     check_file.close();
