@@ -765,13 +765,13 @@ void create_disk_image() {
 void create_compact_disk_image() {
     std::string get_vm_disk_image_cmd = "virsh domblklist " + ship_env.name + " --details | grep vda | awk '{print $4}'";
   
-    std::string original_image_path = exec(get_vm_disk_image_cmd);
+    std::string original_image_path = trim_trailing_whitespaces(exec(get_vm_disk_image_cmd));
     std::string compact_image_path;
 
     while(true) {
         compact_image_path = ship_lib_path + "images/disk-images/" + ship_env.name + generate_random_number(5) + ".qcow2"; 
 
-        std::ifstream check_file(ship_env.disk_image_path);
+        std::ifstream check_file(compact_image_path);
         if (!check_file.good()) {
             break;
         }
@@ -780,7 +780,7 @@ void create_compact_disk_image() {
 
     std::cout << "Creating compact disk image at: " << compact_image_path << std::endl;
 
-    std::string create_compact_disk_cmd = "sudo qemu-img convert -f qcow2 -O qcow2 -o preallocation=metadata,cluster_size=512K " + original_image_path + " " + compact_image_path;
+    std::string create_compact_disk_cmd = "sudo qemu-img convert -f qcow2 -O qcow2 -o preallocation=metadata,cluster_size=512K '" + original_image_path + "' '" + compact_image_path + "'";
     system_exec(create_compact_disk_cmd);
     std::cout << "Successfully created compact disk image: " << compact_image_path << std::endl; 
 
