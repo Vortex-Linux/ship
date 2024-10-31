@@ -791,7 +791,7 @@ void create_compact_disk_image() {
     std::cout << "Making the vm use the compact disk image" << std::endl;  
     shutdown_vm();
 
-    std::string detach_original_disk_cmd = "virsh detach-disk " + ship_env.name + " vda";
+    std::string detach_original_disk_cmd = "virsh detach-disk " + ship_env.name + " vda --persistent";
     system_exec(detach_original_disk_cmd); 
 
     std::string attach_compact_disk_cmd = "virsh attach-disk " + ship_env.name + " " + compact_image_path + " vda --driver qemu --subdriver qcow2 --persistent";
