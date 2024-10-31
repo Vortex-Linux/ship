@@ -43,6 +43,7 @@ enum class ShipAction {
     RECEIVE,
     SEND,
     SHUTDOWN,
+    OPTIMIZE, 
 };
 
 // allows for using the << operator with shipaction
@@ -131,6 +132,7 @@ void tested_vm_information();
 void set_tested_vm(const std::string &vm_name);
 void get_tested_vm();
 void create_disk_image();
+void create_compact_disk_image();
 void set_memory_limit();
 void set_cpu_limit();
 std::string generate_vm_xml();
@@ -166,10 +168,12 @@ bool is_user_in_group(const std::string& group);
 void add_user_to_group(const std::string& group);
 void restart_systemctl_service(const std::string& service_name);
 std::string get_absolute_path(const std::string &relative_path);
+std::string generate_random_number(int num_digits);
 std::string generate_mac_address();
 bool file_exists(const std::string& file_path);
 bool wait_for_file(const std::string& file_path, int timeout_seconds);
 bool wait_for_file_to_fill(const std::string& file_path, int timeout_seconds);
 bool is_file_non_empty(const std::string& file_path);
+void move_file(const std::string& source, const std::string& destination);
 #endif // SHIP_H
 

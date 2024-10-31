@@ -54,6 +54,8 @@ std::ostream& operator<<(std::ostream& os, const ShipAction& action) {
             return os << "Send";
         case ShipAction::SHUTDOWN:
             return os << "Shutdown";
+        case ShipAction::OPTIMIZE:
+            return os << "Optimize";
         default:
             return os << "Unknown";
    }
@@ -224,6 +226,8 @@ void process_operands(int argc, char *argv[]) {
             ship_env.action = ShipAction::RECEIVE;
         } else if (action == "send") {
             ship_env.action = ShipAction::SEND;
+        } else if (action == "optimize") {
+            ship_env.action = ShipAction::OPTIMIZE;
         } else {
             std::cout << "Ship found unknown operand " << action << " for entity " << ship_env.mode << "\n";
             std::cout << "For more information try ship --help\n";
