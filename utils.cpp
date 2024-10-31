@@ -24,6 +24,7 @@ void show_help() {
     std::cout << "    resume NAME                   Resume the specified virtual machine if it's paused" << std::endl;
     std::cout << "    save NAME                     Take a snapshot of the specified virtual machine" << std::endl;
     std::cout << "    shutdown NAME                 Shut down the specified virtual machine" << std::endl;
+    std::cout << "    optimize NAME                 Optimize the space used by the disk image of the specified virtual machine" << std::endl;
     std::cout << "    exec NAME                     Execute the given command in the console of the specified virtual machine" << std::endl;
     std::cout << "      --command COMMAND           Set the command to be executed" << std::endl;
     std::cout << "    package_download or download_packages NAME" << std::endl;
