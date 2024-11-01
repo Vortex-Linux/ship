@@ -371,3 +371,14 @@ std::string decompress_lzo_file(const std::string& file_path) {
     
     return decompressed_file_path;
 }
+
+std::string decompress_lzma_file(const std::string& file_path) {
+    std::cout << "Decompressing the downloaded .lzma file" << "\n";
+    std::string decompress_cmd = "unlzma " + file_path;
+    system_exec(decompress_cmd);
+    
+    std::string decompressed_file_path = file_path.substr(0, file_path.length() - 5);
+    std::cout << "Decompressed file path is " << decompressed_file_path << "\n";
+    
+    return decompressed_file_path;
+}
