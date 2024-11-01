@@ -24,6 +24,7 @@ void show_help() {
     std::cout << "    resume NAME                   Resume the specified virtual machine if it's paused" << std::endl;
     std::cout << "    save NAME                     Take a snapshot of the specified virtual machine" << std::endl;
     std::cout << "    shutdown NAME                 Shut down the specified virtual machine" << std::endl;
+    std::cout << "    optimize NAME                 Optimize the space used by the disk image of the specified virtual machine" << std::endl;
     std::cout << "    exec NAME                     Execute the given command in the console of the specified virtual machine" << std::endl;
     std::cout << "      --command COMMAND           Set the command to be executed" << std::endl;
     std::cout << "    package_download or download_packages NAME" << std::endl;
@@ -314,4 +315,81 @@ bool wait_for_file_to_fill(const std::string& file_path, int timeout_seconds) {
 void move_file(const std::string& source, const std::string& destination) {
     std::string move_file_cmd = "mv " + source + " " + destination;
     system_exec(move_file_cmd);
+}
+
+std::string decompress_xz_file(const std::string& file_path) {
+    std::cout << "Decompressing the downloaded .xz file" << "\n";
+    std::string decompress_cmd = "unxz " + file_path;
+    system_exec(decompress_cmd);
+    
+    std::string decompressed_file_path = file_path.substr(0, file_path.length() - 3);
+    std::cout << "Decompressed file path is " << decompressed_file_path << "\n";
+    
+    return decompressed_file_path; 
+}
+
+std::string decompress_gzip_file(const std::string& file_path) {
+    std::cout << "Decompressing the downloaded .gz file" << "\n";
+    std::string decompress_cmd = "gunzip " + file_path;
+    system_exec(decompress_cmd);
+    
+    std::string decompressed_file_path = file_path.substr(0, file_path.length() - 3);
+    std::cout << "Decompressed file path is " << decompressed_file_path << "\n";
+    
+    return decompressed_file_path;
+}
+
+std::string decompress_bzip2_file(const std::string& file_path) {
+    std::cout << "Decompressing the downloaded .bz2 file" << "\n";
+    std::string decompress_cmd = "bunzip2 " + file_path;
+    system_exec(decompress_cmd);
+    
+    std::string decompressed_file_path = file_path.substr(0, file_path.length() - 4);
+    std::cout << "Decompressed file path is " << decompressed_file_path << "\n";
+    
+    return decompressed_file_path;
+}
+
+std::string decompress_lz4_file(const std::string& file_path) {
+    std::cout << "Decompressing the downloaded .lz4 file" << "\n";   
+    std::string decompress_cmd = "unlz4 " + file_path; 
+    system_exec(decompress_cmd);
+    
+    std::string decompressed_file_path = file_path.substr(0, file_path.length() - 4);
+    std::cout << "Decompressed file path is " << decompressed_file_path << "\n";
+    
+    return decompressed_file_path;
+}
+
+std::string decompress_lzo_file(const std::string& file_path) {
+    std::cout << "Decompressing the downloaded .lzo file" << "\n";
+    std::string decompress_cmd = "lzop -d " + file_path;
+    system_exec(decompress_cmd);
+    
+    std::string decompressed_file_path = file_path.substr(0, file_path.length() - 4);
+    std::cout << "Decompressed file path is " << decompressed_file_path << "\n";
+    
+    return decompressed_file_path;
+}
+
+std::string decompress_lzma_file(const std::string& file_path) {
+    std::cout << "Decompressing the downloaded .lzma file" << "\n";
+    std::string decompress_cmd = "unlzma " + file_path;
+    system_exec(decompress_cmd);
+    
+    std::string decompressed_file_path = file_path.substr(0, file_path.length() - 5);
+    std::cout << "Decompressed file path is " << decompressed_file_path << "\n";
+    
+    return decompressed_file_path;
+}
+
+std::string decompress_lzip_file(const std::string& file_path) {
+    std::cout << "Decompressing the downloaded .lz file" << "\n";
+    std::string decompress_cmd = "lzip -d " + file_path;
+    system_exec(decompress_cmd);
+    
+    std::string decompressed_file_path = file_path.substr(0, file_path.length() - 3);
+    std::cout << "Decompressed file path is " << decompressed_file_path << "\n";
+    
+    return decompressed_file_path;
 }

@@ -326,6 +326,41 @@ void delete_vm() {
 
 }
 
+void process_source_file() {
+    if (ship_env.source_local.find_last_of(".") != std::string::npos) {
+        std::string extension = ship_env.source_local.substr(ship_env.source_local.find_last_of("."));
+
+        if (extension == ".gz") {
+            ship_env.source_local = decompress_gzip_file(ship_env.source_local);
+            extension = ship_env.source_local.substr(ship_env.source_local.find_last_of("."));
+        } else if (extension == ".bz2") {
+            ship_env.source_local = decompress_bzip2_file(ship_env.source_local);
+            extension = ship_env.source_local.substr(ship_env.source_local.find_last_of("."));
+        } else if (extension == ".xz") {
+            ship_env.source_local = decompress_xz_file(ship_env.source_local);
+            extension = ship_env.source_local.substr(ship_env.source_local.find_last_of("."));
+        } else if (extension == ".lz4") {
+            ship_env.source_local = decompress_lz4_file(ship_env.source_local);
+            extension = ship_env.source_local.substr(ship_env.source_local.find_last_of("."));
+        } else if (extension == ".lzo") {
+            ship_env.source_local = decompress_lzo_file(ship_env.source_local);
+            extension = ship_env.source_local.substr(ship_env.source_local.find_last_of("."));
+        } else if (extension == ".lzma") {
+            ship_env.source_local = decompress_lzma_file(ship_env.source_local);
+            extension = ship_env.source_local.substr(ship_env.source_local.find_last_of("."));
+        } else if (extension == ".lz") {
+            ship_env.source_local = decompress_lzip_file(ship_env.source_local);
+            extension = ship_env.source_local.substr(ship_env.source_local.find_last_of("."));
+        }
+
+        if (extension == ".iso") {
+            ship_env.iso_path = get_absolute_path(ship_env.source_local);
+            create_disk_image();
+        }else if (extension == ".qcow2" || extension == ".qcow" || extension == ".img") {
+            ship_env.disk_image_path = get_absolute_path(ship_env.source_local);
+        }
+    }
+}
 void create_vm() {
     
     bool custom_vm = true;
@@ -375,27 +410,6 @@ void create_vm() {
 
     ship_env.source_local = trim_trailing_whitespaces(ship_env.source_local);
 
-    if (ship_env.source_local.find_last_of(".") != std::string::npos) {
-        std::string extension = ship_env.source_local.substr(ship_env.source_local.find_last_of("."));
-
-        if (extension == ".xz") {
-            std::cout << "Decompressing the downloaded .xz file" << "\n";
-            std::string decompress_cmd = "unxz " + ship_env.source_local;
-            system_exec(decompress_cmd);
-            
-            ship_env.source_local = ship_env.source_local.substr(0, ship_env.source_local.length() - 3); 
-            std::cout << "Decompressed file path is " << ship_env.source_local << "\n";
-
-            extension = ship_env.source_local.substr(ship_env.source_local.find_last_of("."));
-        }
-
-        if (extension == ".iso") {
-            ship_env.iso_path = get_absolute_path(ship_env.source_local);
-            create_disk_image();
-        }else if (extension == ".qcow2" || extension == ".qcow" || extension == ".img") {
-            ship_env.disk_image_path = get_absolute_path(ship_env.source_local);
-        }
-    }
 
     set_memory_limit();
     set_cpu_limit();
