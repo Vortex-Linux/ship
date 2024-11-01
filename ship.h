@@ -179,5 +179,6 @@ void move_file(const std::string& source, const std::string& destination);
 std::string decompress_xz_file(const std::string& file_path);
 std::string decompress_gzip_file(const std::string& file_path);
 std::string decompress_bzip2_file(const std::string& file_path);
+std::string decompress_lz4_file(const std::string& file_path);
 #endif // SHIP_H
 
