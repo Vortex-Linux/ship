@@ -182,5 +182,6 @@ std::string decompress_bzip2_file(const std::string& file_path);
 std::string decompress_lz4_file(const std::string& file_path);
 std::string decompress_lzo_file(const std::string& file_path);
 std::string decompress_lzma_file(const std::string& file_path);
+std::string decompress_lzip_file(const std::string& file_path);
 #endif // SHIP_H
 

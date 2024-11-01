@@ -348,6 +348,9 @@ void process_source_file() {
         } else if (extension == ".lzma") {
             ship_env.source_local = decompress_lzma_file(ship_env.source_local);
             extension = ship_env.source_local.substr(ship_env.source_local.find_last_of("."));
+        } else if (extension == ".lz") {
+            ship_env.source_local = decompress_lzip_file(ship_env.source_local);
+            extension = ship_env.source_local.substr(ship_env.source_local.find_last_of("."));
         }
 
         if (extension == ".iso") {
