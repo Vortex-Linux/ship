@@ -339,8 +339,11 @@ void process_source_file() {
         } else if (extension == ".xz") {
             ship_env.source_local = decompress_xz_file(ship_env.source_local);
             extension = ship_env.source_local.substr(ship_env.source_local.find_last_of("."));
-        } else if (extension == ".xz") {
+        } else if (extension == ".lz4") {
             ship_env.source_local = decompress_lz4_file(ship_env.source_local);
+            extension = ship_env.source_local.substr(ship_env.source_local.find_last_of("."));
+        } else if (extension == ".lzo") {
+            ship_env.source_local = decompress_lzo_file(ship_env.source_local);
             extension = ship_env.source_local.substr(ship_env.source_local.find_last_of("."));
         }
 
