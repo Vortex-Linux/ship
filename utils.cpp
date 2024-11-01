@@ -316,3 +316,36 @@ void move_file(const std::string& source, const std::string& destination) {
     std::string move_file_cmd = "mv " + source + " " + destination;
     system_exec(move_file_cmd);
 }
+
+std::string decompress_xz_file(const std::string& file_path) {
+    std::cout << "Decompressing the downloaded .xz file" << "\n";
+    std::string decompress_cmd = "unxz " + file_path;
+    system_exec(decompress_cmd);
+    
+    std::string decompressed_file_path = file_path.substr(0, file_path.length() - 3);
+    std::cout << "Decompressed file path is " << decompressed_file_path << "\n";
+    
+    return decompressed_file_path; 
+}
+
+std::string decompress_gzip_file(const std::string& file_path) {
+    std::cout << "Decompressing the downloaded .gz file" << "\n";
+    std::string decompress_cmd = "gunzip " + file_path;
+    system_exec(decompress_cmd);
+    
+    std::string decompressed_file_path = file_path.substr(0, file_path.length() - 3);
+    std::cout << "Decompressed file path is " << decompressed_file_path << "\n";
+    
+    return decompressed_file_path;
+}
+
+std::string decompress_bzip2_file(const std::string& file_path) {
+    std::cout << "Decompressing the downloaded .bz2 file" << "\n";
+    std::string decompress_cmd = "bunzip2 " + file_path;
+    system_exec(decompress_cmd);
+    
+    std::string decompressed_file_path = file_path.substr(0, file_path.length() - 4);
+    std::cout << "Decompressed file path is " << decompressed_file_path << "\n";
+    
+    return decompressed_file_path;
+}

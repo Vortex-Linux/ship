@@ -121,6 +121,7 @@ std::string get_vm_image_paths();
 void clean_vm_resources();
 bool vm_exists(const std::string& vm_name);
 void delete_vm();
+void process_source_file();
 void create_vm();
 void save_vm();
 void generate_vm_name();
@@ -175,5 +176,8 @@ bool wait_for_file(const std::string& file_path, int timeout_seconds);
 bool wait_for_file_to_fill(const std::string& file_path, int timeout_seconds);
 bool is_file_non_empty(const std::string& file_path);
 void move_file(const std::string& source, const std::string& destination);
+std::string decompress_xz_file(const std::string& file_path);
+std::string decompress_gzip_file(const std::string& file_path);
+std::string decompress_bzip2_file(const std::string& file_path);
 #endif // SHIP_H
 
