@@ -776,10 +776,13 @@ void create_disk_image() {
     check_file.close();
 }
 
-void create_compact_disk_image() {
+std::string get_disk_image_path() {
     std::string get_vm_disk_image_cmd = "virsh domblklist " + ship_env.name + " --details | grep vda | awk '{print $4}'";
-  
-    std::string original_image_path = trim_trailing_whitespaces(exec(get_vm_disk_image_cmd));
+    return trim_trailing_whitespaces(exec(get_vm_disk_image_cmd));
+}
+
+void create_compact_disk_image() {
+    std::string original_image_path = get_disk_image_path();
     std::string compact_image_path;
 
     while(true) {

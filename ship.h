@@ -133,6 +133,7 @@ void tested_vm_information();
 void set_tested_vm(const std::string &vm_name);
 void get_tested_vm();
 void create_disk_image();
+std::string get_disk_image_path();
 void create_compact_disk_image();
 void set_memory_limit();
 void set_cpu_limit();
