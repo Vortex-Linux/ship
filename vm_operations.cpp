@@ -796,6 +796,12 @@ void convert_to_compact_image(const std::string &original_image_path, const std:
     std::cout << "Successfully converted disk image from " << original_image_path << " to " << compact_image_path << std::endl;
 }
 
+void delete_disk_image(const std::string &image_path) {
+    std::cout << "Deleting the original disk image: " << image_path << std::endl;
+    std::string delete_cmd = "rm " + image_path;
+    system_exec(delete_cmd);
+}
+
 void create_compact_disk_image() {
     std::string original_image_path = get_disk_image_path();
     std::string compact_image_path;
@@ -811,10 +817,7 @@ void create_compact_disk_image() {
     }
     
     convert_to_compact_image(original_image_path, compact_image_path);
-
-    std::cout << "Deleting the original disk image: " << original_image_path << std::endl;
-    std::string delete_original_image_cmd = "rm " + original_image_path;
-    system_exec(delete_original_image_cmd); 
+    delete_disk_image(original_image_path);
 
     std::cout << "Making the vm use the compact disk image" << std::endl;  
     shutdown_vm();
