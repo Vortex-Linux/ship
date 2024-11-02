@@ -137,6 +137,7 @@ std::string get_disk_image_path();
 void convert_disk_image(const std::string &source_image, const std::string &dest_image, const std::string &options);
 void convert_to_compact_image(const std::string &original_image_path, const std::string &compact_image_path);
 void delete_disk_image(const std::string &image_path);
+void detach_disk(const std::string &vm_name, const std::string &disk_name);
 void create_compact_disk_image();
 void set_memory_limit();
 void set_cpu_limit();
