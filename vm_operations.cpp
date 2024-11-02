@@ -812,18 +812,23 @@ void attach_disk(const std::string &vm_name, const std::string &disk_path, const
     system_exec(attach_cmd);
 }
 
-void create_compact_disk_image() {
-    std::string original_image_path = get_disk_image_path();
-    std::string compact_image_path;
+std::string generate_unique_image_path() {
+    std::string unique_image_path;
 
     while (true) {
-        compact_image_path = base_path + "images/disk-images/" + name + generate_random_number(5) + ".qcow2"; 
+        unique_image_path = ship_lib_path + "images/disk-images/" + ship_env.name + generate_random_number(5) + ".qcow2"; 
 
-        if (!file_exists(compact_image_path)) {
+        if (!file_exists(unique_image_path)) {
             break; 
         }
     }
-    
+    return unique_image_path;
+}
+
+void create_compact_disk_image() {
+    std::string original_image_path = get_disk_image_path();
+    std::string compact_image_path = generate_unique_image_path();
+
     convert_to_compact_image(original_image_path, compact_image_path);
     delete_disk_image(original_image_path);
 

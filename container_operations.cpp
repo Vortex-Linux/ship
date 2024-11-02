@@ -367,6 +367,3 @@ void exec_action_for_container() {
             break;
     }
 }
-
-
-
