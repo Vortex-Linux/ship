@@ -786,6 +786,16 @@ void convert_disk_image(const std::string &source_image, const std::string &dest
     system_exec(convert_cmd);
 }
 
+void convert_to_compact_image(const std::string &original_image_path, const std::string &compact_image_path) {
+    std::string options = "-o preallocation=metadata,cluster_size=512K";
+
+    std::cout << "Creating compact disk image at: " << compact_image_path << std::endl;
+
+    convert_disk_image(original_image_path, compact_image_path, options);
+    
+    std::cout << "Successfully converted disk image from " << original_image_path << " to " << compact_image_path << std::endl;
+}
+
 void create_compact_disk_image() {
     std::string original_image_path = get_disk_image_path();
     std::string compact_image_path;
@@ -799,11 +809,8 @@ void create_compact_disk_image() {
         }
         check_file.close();
     }
-
-
-    std::cout << "Creating compact disk image at: " << compact_image_path << std::endl;
-    convert_disk_image(original_image_path, compact_image_path, "-o preallocation=metadata,cluster_size=512K");
-    std::cout << "Successfully created compact disk image: " << compact_image_path << std::endl; 
+    
+    convert_to_compact_image(original_image_path, compact_image_path);
 
     std::cout << "Deleting the original disk image: " << original_image_path << std::endl;
     std::string delete_original_image_cmd = "rm " + original_image_path;
