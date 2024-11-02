@@ -781,6 +781,11 @@ std::string get_disk_image_path() {
     return trim_trailing_whitespaces(exec(get_vm_disk_image_cmd));
 }
 
+void convert_disk_image(const std::string &source_image, const std::string &dest_image, const std::string &options) {
+    std::string convert_cmd = "sudo qemu-img convert -f qcow2 -O qcow2 " + options + " '" + source_image + "' '" + dest_image + "'";
+    system_exec(convert_cmd);
+}
+
 void create_compact_disk_image() {
     std::string original_image_path = get_disk_image_path();
     std::string compact_image_path;
@@ -795,10 +800,9 @@ void create_compact_disk_image() {
         check_file.close();
     }
 
-    std::cout << "Creating compact disk image at: " << compact_image_path << std::endl;
 
-    std::string create_compact_disk_cmd = "sudo qemu-img convert -f qcow2 -O qcow2 -o preallocation=metadata,cluster_size=512K '" + original_image_path + "' '" + compact_image_path + "'";
-    system_exec(create_compact_disk_cmd);
+    std::cout << "Creating compact disk image at: " << compact_image_path << std::endl;
+    convert_disk_image(original_image_path, compact_image_path, "-o preallocation=metadata,cluster_size=512K");
     std::cout << "Successfully created compact disk image: " << compact_image_path << std::endl; 
 
     std::cout << "Deleting the original disk image: " << original_image_path << std::endl;
