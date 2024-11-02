@@ -139,6 +139,7 @@ void convert_to_compact_image(const std::string &original_image_path, const std:
 void delete_disk_image(const std::string &image_path);
 void detach_disk(const std::string &vm_name, const std::string &disk_name);
 void attach_disk(const std::string &vm_name, const std::string &disk_path, const std::string &disk_name);
+void replace_vm_disk(const std::string &vm_name, const std::string &new_disk_path, const std::string &disk_target);
 std::string generate_unique_image_path();
 void create_compact_disk_image();
 void set_memory_limit();

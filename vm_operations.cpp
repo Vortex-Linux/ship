@@ -824,6 +824,12 @@ std::string generate_unique_image_path() {
     return unique_image_path;
 }
 
+void replace_vm_disk(const std::string &vm_name, const std::string &new_disk_path, const std::string &disk_target) {
+    detach_disk(vm_name, disk_target);
+
+    attach_disk(vm_name, new_disk_path, disk_target);
+}
+
 void create_compact_disk_image() {
     std::string original_image_path = get_disk_image_path();
     std::string compact_image_path = generate_unique_image_path();
@@ -833,8 +839,8 @@ void create_compact_disk_image() {
 
     std::cout << "Making the vm use the compact disk image" << std::endl;  
     shutdown_vm();
-    detach_disk(ship_env.name, "vda");
-    attach_disk(ship_env.name, compact_image_path, "vda");
+
+    replace_vm_disk(ship_env.name, compact_image_path, "vda");
 
     std::cout << "Successfully replaced original disk image with compact version." << std::endl;
 }
