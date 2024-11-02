@@ -765,15 +765,14 @@ void get_tested_vm() {
 }
 
 void create_disk_image() {
-    ship_env.disk_image_path = ship_lib_path + "images/disk-images/" + ship_env.name + generate_random_number(5) + ".qcow2";
+    ship_env.disk_image_path = generate_unique_image_path();
 
-    if (!file_exists(ship_env.disk_image_path)) {
-        std::cout << "Creating disk image at: " << ship_env.disk_image_path << std::endl;
+    std::cout << "Creating disk image at: " << ship_env.disk_image_path << std::endl;
 
-        std::string create_disk_cmd = "qemu-img create -f qcow2 -o preallocation=metadata,cluster_size=512K " + ship_env.disk_image_path + " 2T";
-        system_exec(create_disk_cmd);
-        std::cout << "Disk image created successfully." << std::endl;
-    }
+    std::string create_disk_cmd = "qemu-img create -f qcow2 -o preallocation=metadata,cluster_size=512K " + ship_env.disk_image_path + " 2T";
+    system_exec(create_disk_cmd);
+
+    std::cout << "Disk image created successfully." << std::endl;
 }
 
 std::string get_disk_image_path() {
