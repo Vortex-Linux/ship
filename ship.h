@@ -44,6 +44,7 @@ enum class ShipAction {
     SEND,
     SHUTDOWN,
     OPTIMIZE, 
+    COMPRESS, 
 };
 
 // allows for using the << operator with shipaction
@@ -136,12 +137,13 @@ void create_disk_image();
 std::string get_disk_image_path();
 void convert_disk_image(const std::string &source_image, const std::string &dest_image, const std::string &options);
 void convert_to_compact_image(const std::string &original_image_path, const std::string &compact_image_path);
+void convert_to_compressed_image(const std::string &original_image_path, const std::string &compact_image_path);
 void delete_disk_image(const std::string &image_path);
 void detach_disk(const std::string &vm_name, const std::string &disk_name);
 void attach_disk(const std::string &vm_name, const std::string &disk_path, const std::string &disk_name);
 void replace_vm_disk(const std::string &vm_name, const std::string &new_disk_path, const std::string &disk_target);
 std::string generate_unique_image_path();
-void create_compact_disk_image();
+void create_optimized_disk_image();
 void set_memory_limit();
 void set_cpu_limit();
 std::string generate_vm_xml();

@@ -795,6 +795,16 @@ void convert_to_compact_image(const std::string &original_image_path, const std:
     std::cout << "Successfully converted disk image from " << original_image_path << " to " << compact_image_path << std::endl;
 }
 
+void convert_to_compressed_image(const std::string &original_image_path, const std::string &compact_image_path) {
+    std::string options = "-c -o preallocation=metadata,cluster_size=512K";
+
+    std::cout << "Creating compact and compressed disk image at: " << compact_image_path << std::endl;
+
+    convert_disk_image(original_image_path, compact_image_path, options);
+    
+    std::cout << "Successfully converted and compressed disk image from " << original_image_path << " to " << compact_image_path << std::endl;
+}
+
 void delete_disk_image(const std::string &image_path) {
     std::cout << "Deleting the original disk image: " << image_path << std::endl;
     std::string delete_cmd = "rm " + image_path;
@@ -830,11 +840,16 @@ void replace_vm_disk(const std::string &vm_name, const std::string &new_disk_pat
     attach_disk(vm_name, new_disk_path, disk_target);
 }
 
-void create_compact_disk_image() {
+void create_optimized_disk_image() {
     std::string original_image_path = get_disk_image_path();
     std::string compact_image_path = generate_unique_image_path();
 
-    convert_to_compact_image(original_image_path, compact_image_path);
+    if (ship_env.action == ShipAction::OPTIMIZE) {
+        convert_to_compact_image(original_image_path, compact_image_path);
+    } else if(ship_env.action == ShipAction::COMPRESS) {
+        convert_to_compressed_image(original_image_path, compact_image_path);
+    }
+
     delete_disk_image(original_image_path);
 
     std::cout << "Making the vm use the compact disk image" << std::endl;  
@@ -1129,7 +1144,8 @@ void exec_action_for_vm() {
             send_vm_file();
             break;
         case ShipAction::OPTIMIZE:
-            create_compact_disk_image();
+        case ShipAction::COMPRESS:
+            create_optimized_disk_image();
             break;
         default: 
             std::cout << "Invalid action for VM.\n";
