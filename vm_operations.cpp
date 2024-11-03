@@ -796,9 +796,9 @@ void convert_to_compact_image(const std::string &original_image_path, const std:
 }
 
 void convert_to_compressed_image(const std::string &original_image_path, const std::string &compact_image_path) {
-    std::string options = "-c -o preallocation=metadata,cluster_size=512K";
+    std::string options = "-c -o cluster_size=512K";
 
-    std::cout << "Creating compact and compressed disk image at: " << compact_image_path << std::endl;
+    std::cout << "Creating compressed disk image at: " << compact_image_path << std::endl;
 
     convert_disk_image(original_image_path, compact_image_path, options);
     
@@ -844,9 +844,9 @@ void create_optimized_disk_image() {
     std::string original_image_path = get_disk_image_path();
     std::string compact_image_path = generate_unique_image_path();
 
-    if (ship_env.action == ShipAction::OPTIMIZE) {
-        convert_to_compact_image(original_image_path, compact_image_path);
-    } else if(ship_env.action == ShipAction::COMPRESS) {
+    convert_to_compact_image(original_image_path, compact_image_path);
+
+    if(ship_env.action == ShipAction::COMPRESS) {
         convert_to_compressed_image(original_image_path, compact_image_path);
     }
 
