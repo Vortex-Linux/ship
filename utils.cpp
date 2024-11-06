@@ -394,3 +394,29 @@ std::string decompress_lzip_file(const std::string& file_path) {
     
     return decompressed_file_path;
 }
+
+bool is_html_content(const std::string& url) {
+    std::string check_content_type = "curl -Is \"" + url + "\" | grep -i \"Content-Type\"";
+    std::string content_type = exec(check_content_type);
+
+    if (content_type.find("text/html") != std::string::npos) {
+        return true;  
+    }
+    return false;
+}
+
+std::vector<std::string> get_links_from_page(const std::string& url) {
+    std::string find_links_from_page = "lynx -dump -listonly -nonumbers '" + url + "' | grep -oP 'http[s]?://\\S+'";
+
+    std::string output = exec(find_links_from_page);
+
+    std::vector<std::string> links;
+    std::stringstream ss(output);
+    std::string link;
+
+    while (std::getline(ss, link)) {
+        links.push_back(link);
+    }
+
+    return links;
+}

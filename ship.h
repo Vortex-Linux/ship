@@ -127,6 +127,8 @@ void create_vm();
 void save_vm();
 void generate_vm_name();
 void start_vm_with_confirmation_prompt();
+std::vector<std::string> get_links_from_page(const std::string& url);
+bool is_html_content(const std::string& url);
 void get_iso_source();
 void print_available_tested_vms();
 std::string get_tested_vm_link(const std::string &vm_name);

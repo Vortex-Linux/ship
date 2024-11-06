@@ -566,17 +566,30 @@ void start_vm_with_confirmation_prompt() {
 
 void get_iso_source() {
     if (!ship_env.source.empty()) {
-        std::cout << "Downloading iso to images" << "\n";
+        if(is_html_content(ship_env.source)) {
+            std::cout << "The source is a webpage, extracting links from the page" << std::endl;
+            std::vector<std::string> links = get_links_from_page(ship_env.source);
+
+            for (const std::string& link : links) {
+                if(!is_html_content(link)) {
+                    ship_env.source = link;
+                    get_iso_source();
+                }
+            }
+        }
+        
+        std::cout << "Checking the content type of the source" << std::endl;
+        std::cout << "Downloading iso to images" << std::endl;
         
         std::string download_cmd = "aria2c --dir " + ship_lib_path + "images/iso-images " + ship_env.source;
         system_exec(download_cmd);
         
-        std::cout << "Finding the path to the downloaded iso image" << "\n";
+        std::cout << "Finding the path to the downloaded iso image" << std::endl;
         
         std::string find_latest_image_cmd = "find " + ship_lib_path + "images/iso-images -type f -exec ls -t1 {} + | head -1";
         ship_env.source_local = exec(find_latest_image_cmd);
         
-        std::cout << "Found the path as " << ship_env.source_local << "\n";
+        std::cout << "Found the path as " << ship_env.source_local << std::endl;
     }
 }
 
