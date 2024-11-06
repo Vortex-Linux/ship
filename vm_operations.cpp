@@ -581,13 +581,12 @@ void get_iso_source() {
                 }
             }
             combine_split_files(image_path, ship_env.name);
+        }else {
+            std::cout << "Downloading iso to images" << std::endl;
+        
+            std::string download_cmd = "aria2c --dir " + ship_lib_path + "images/iso-images " + ship_env.source;
+            system_exec(download_cmd);  
         }
-        
-        std::cout << "Checking the content type of the source" << std::endl;
-        std::cout << "Downloading iso to images" << std::endl;
-        
-        std::string download_cmd = "aria2c --dir " + ship_lib_path + "images/iso-images " + ship_env.source;
-        system_exec(download_cmd);
         
         std::cout << "Finding the path to the downloaded iso image" << std::endl;
         
@@ -628,7 +627,7 @@ std::string get_tested_vm_link(const std::string &vm_name) {
     } else if (vm_name == "ubuntu") {
         return "";
     } else if (vm_name == "arch") {
-        return "https://github.com/Vortex-Linux/Arch-VM-Base/releases/download/v0.1.2/archlinux.qcow2.xz";
+        return "https://github.com/Vortex-Linux/Arch-VM-Base/releases/download/v0.1.2/";
     } else if (vm_name == "gentoo") {
         return "";
     } else if (vm_name == "fedora") {
