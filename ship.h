@@ -127,6 +127,8 @@ void create_vm();
 void save_vm();
 void generate_vm_name();
 void start_vm_with_confirmation_prompt();
+void clear_split_files(const std::string& path);
+void combine_split_files(const std::string& path, const std::string& combined_iso_name);
 std::vector<std::string> get_links_from_page(const std::string& url);
 bool is_html_content(const std::string& url);
 void get_iso_source();

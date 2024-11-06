@@ -565,8 +565,12 @@ void start_vm_with_confirmation_prompt() {
 }
 
 void get_iso_source() {
+    std::string image_path = ship_lib_path + "images/iso-images/";
+
     if (!ship_env.source.empty()) {
         if(is_html_content(ship_env.source)) {
+            clear_split_files(image_path);
+
             std::cout << "The source is a webpage, extracting links from the page" << std::endl;
             std::vector<std::string> links = get_links_from_page(ship_env.source);
 
@@ -576,6 +580,7 @@ void get_iso_source() {
                     get_iso_source();
                 }
             }
+            combine_split_files(image_path, ship_env.name);
         }
         
         std::cout << "Checking the content type of the source" << std::endl;
@@ -586,7 +591,7 @@ void get_iso_source() {
         
         std::cout << "Finding the path to the downloaded iso image" << std::endl;
         
-        std::string find_latest_image_cmd = "find " + ship_lib_path + "images/iso-images -type f -exec ls -t1 {} + | head -1";
+        std::string find_latest_image_cmd = "find " + image_path + " -type f -exec ls -t1 {} + | head -1";
         ship_env.source_local = exec(find_latest_image_cmd);
         
         std::cout << "Found the path as " << ship_env.source_local << std::endl;

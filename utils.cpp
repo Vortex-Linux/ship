@@ -420,3 +420,23 @@ std::vector<std::string> get_links_from_page(const std::string& url) {
 
     return links;
 }
+
+void clear_split_files(const std::string& path) {
+    std::string delete_split_files_cmd = "find " + path + " -type f -name '*.00?' -exec rm -f {} +";
+    std::cout << "Clearing existing split files..." << std::endl;
+    system(delete_split_files_cmd.c_str());
+}
+
+void combine_split_files(const std::string& path, const std::string& combined_iso_name) {
+    std::string find_split_files_cmd = "find " + path + " -type f -name '*.00?'";
+    std::string output = exec(find_split_files_cmd);
+
+    if (!output.empty()) {
+        std::cout << "Combining split files into a single ISO..." << std::endl;
+        std::string combine_cmd = "cat " + path + "*.00? > " + path + combined_iso_name;
+        system(combine_cmd.c_str());
+        
+        std::cout << "Combined ISO file created at " << path + combined_iso_name << std::endl;
+    }
+}
+
