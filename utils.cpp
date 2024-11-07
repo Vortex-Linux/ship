@@ -399,6 +399,7 @@ bool is_html_content(const std::string& url) {
     std::string check_content_type = "curl -Is \"" + url + "\" | grep -i \"Content-Type\"";
     std::string content_type = exec(check_content_type);
 
+    std::cout << content_type << std::endl;
     if (content_type.find("text/html") != std::string::npos) {
         return true;  
     }
@@ -414,6 +415,7 @@ std::vector<std::string> get_links_from_page(const std::string& url) {
     std::stringstream ss(output);
     std::string link;
 
+    std::cout << content_type << std::endl;
     while (std::getline(ss, link)) {
         links.push_back(link);
     }
