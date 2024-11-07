@@ -436,8 +436,10 @@ void combine_split_files(const std::string& path, const std::string& combined_na
         std::cout << "Combining split files into a single ISO..." << std::endl;
         std::string combine_cmd = "cat " + path + "*.00? > " + path + combined_name;
         system(combine_cmd.c_str());
-        
-        std::cout << "Combined ISO file created at " << path + combined_name << std::endl;
+
+        ship_env.source_local = path + combined_name + " .qcow2";
+
+        std::cout << "Combined disk file created at " << path + combined_name << std::endl;
     }
 }
 
