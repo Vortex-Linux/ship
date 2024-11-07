@@ -575,12 +575,10 @@ void get_iso_source() {
             std::vector<std::string> links = get_links_from_page(ship_env.source);
 
             for (const std::string& link : links) {
-                std::cout << link << std::endl;
                 if (link.find_last_of(".") != std::string::npos) {
                     std::string extension = link.substr(link.find_last_of("."));
-                    if (std::regex_match(extension, std::regex("\\.\\d{3}"))) {
-                        ship_env.source = link;
-                        get_iso_source();  
+                    if (std::regex_match(extension, std::regex("\\.\\d{3}(/.*)?$"))) {
+                    
                     }
                 }
             }
@@ -631,7 +629,7 @@ std::string get_tested_vm_link(const std::string &vm_name) {
     } else if (vm_name == "ubuntu") {
         return "";
     } else if (vm_name == "arch") {
-        return "https://github.com/Vortex-Linux/Arch-VM-Base/tree/v0.1.2";
+        return "https://sourceforge.net/projects/arch-vm-base/files/v0.1.2/";
     } else if (vm_name == "gentoo") {
         return "";
     } else if (vm_name == "fedora") {
