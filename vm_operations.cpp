@@ -410,6 +410,7 @@ void create_vm() {
 
     ship_env.source_local = trim_trailing_whitespaces(ship_env.source_local);
 
+    process_source_file();
 
     set_memory_limit();
     set_cpu_limit();
