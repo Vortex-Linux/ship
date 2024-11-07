@@ -410,6 +410,7 @@ void create_vm() {
 
     ship_env.source_local = trim_trailing_whitespaces(ship_env.source_local);
 
+    process_source_file();
 
     set_memory_limit();
     set_cpu_limit();
@@ -564,19 +565,43 @@ void start_vm_with_confirmation_prompt() {
     start_vm();
 }
 
+void download_iso() {
+    std::cout << "Downloading iso to images" << std::endl;
+        
+    std::string download_cmd = "aria2c --dir " + ship_lib_path + "images/iso-images " + ship_env.source;
+    system_exec(download_cmd);  
+}
+
 void get_iso_source() {
+    std::string image_path = ship_lib_path + "images/iso-images/";
+
     if (!ship_env.source.empty()) {
-        std::cout << "Downloading iso to images" << "\n";
+        if(is_html_content(ship_env.source)) {
+            clear_split_files(image_path);
+
+            std::cout << "The source is a webpage, extracting links from the page" << std::endl;
+            std::vector<std::string> links = get_links_from_page(ship_env.source);
+
+            for (const std::string& link : links) {
+                if (link.find_last_of(".") != std::string::npos) {
+                    std::string extension = link.substr(link.find_last_of("."));
+                    if (std::regex_match(extension, std::regex("\\.\\d{3}(/.*)?$"))) {
+                        ship_env.source = link;
+                        download_iso(); 
+                    }
+                }
+            }
+            combine_split_files(image_path, ship_env.name);
+        }else {
+            download_iso();
+        }
         
-        std::string download_cmd = "aria2c --dir " + ship_lib_path + "images/iso-images " + ship_env.source;
-        system_exec(download_cmd);
+        std::cout << "Finding the path to the downloaded iso image" << std::endl;
         
-        std::cout << "Finding the path to the downloaded iso image" << "\n";
-        
-        std::string find_latest_image_cmd = "find " + ship_lib_path + "images/iso-images -type f -exec ls -t1 {} + | head -1";
+        std::string find_latest_image_cmd = "find " + image_path + " -type f -exec ls -t1 {} + | head -1";
         ship_env.source_local = exec(find_latest_image_cmd);
         
-        std::cout << "Found the path as " << ship_env.source_local << "\n";
+        std::cout << "Found the path as " << ship_env.source_local << std::endl;
     }
 }
 
@@ -610,7 +635,7 @@ std::string get_tested_vm_link(const std::string &vm_name) {
     } else if (vm_name == "ubuntu") {
         return "";
     } else if (vm_name == "arch") {
-        return "https://github.com/Vortex-Linux/Arch-VM-Base/releases/download/v0.1.2/archlinux.qcow2.xz";
+        return "https://sourceforge.net/projects/arch-vm-base/files/v0.1.2/";
     } else if (vm_name == "gentoo") {
         return "";
     } else if (vm_name == "fedora") {
@@ -765,51 +790,97 @@ void get_tested_vm() {
 }
 
 void create_disk_image() {
-    ship_env.disk_image_path = ship_lib_path + "images/disk-images/" + ship_env.name + generate_random_number(5) + ".qcow2";
-    std::ifstream check_file(ship_env.disk_image_path);
-    if (!check_file.good()) {
-        std::cout << "Creating disk image at: " << ship_env.disk_image_path << std::endl;
+    ship_env.disk_image_path = generate_unique_image_path();
 
-        std::string create_disk_cmd = "qemu-img create -f qcow2 -o preallocation=metadata,cluster_size=512K " + ship_env.disk_image_path + " 2T";
-        system_exec(create_disk_cmd);
-    }
-    check_file.close();
+    std::cout << "Creating disk image at: " << ship_env.disk_image_path << std::endl;
+
+    std::string create_disk_cmd = "qemu-img create -f qcow2 -o preallocation=metadata,cluster_size=512K " + ship_env.disk_image_path + " 2T";
+    system_exec(create_disk_cmd);
+
+    std::cout << "Disk image created successfully." << std::endl;
 }
 
-void create_compact_disk_image() {
+std::string get_disk_image_path() {
     std::string get_vm_disk_image_cmd = "virsh domblklist " + ship_env.name + " --details | grep vda | awk '{print $4}'";
-  
-    std::string original_image_path = trim_trailing_whitespaces(exec(get_vm_disk_image_cmd));
-    std::string compact_image_path;
+    return trim_trailing_whitespaces(exec(get_vm_disk_image_cmd));
+}
 
-    while(true) {
-        compact_image_path = ship_lib_path + "images/disk-images/" + ship_env.name + generate_random_number(5) + ".qcow2"; 
+void convert_disk_image(const std::string &source_image, const std::string &dest_image, const std::string &options) {
+    std::string convert_cmd = "sudo qemu-img convert -f qcow2 -O qcow2 " + options + " '" + source_image + "' '" + dest_image + "'";
+    system_exec(convert_cmd);
+}
 
-        std::ifstream check_file(compact_image_path);
-        if (!check_file.good()) {
-            break;
-        }
-        check_file.close();
-    }
+void convert_to_compact_image(const std::string &original_image_path, const std::string &compact_image_path) {
+    std::string options = "-o preallocation=metadata,cluster_size=512K";
 
     std::cout << "Creating compact disk image at: " << compact_image_path << std::endl;
 
-    std::string create_compact_disk_cmd = "sudo qemu-img convert -f qcow2 -O qcow2 -o preallocation=metadata,cluster_size=512K '" + original_image_path + "' '" + compact_image_path + "'";
-    system_exec(create_compact_disk_cmd);
-    std::cout << "Successfully created compact disk image: " << compact_image_path << std::endl; 
+    convert_disk_image(original_image_path, compact_image_path, options);
+    
+    std::cout << "Successfully converted disk image from " << original_image_path << " to " << compact_image_path << std::endl;
+}
 
-    std::cout << "Deleting the original disk image: " << original_image_path << std::endl;
-    std::string delete_original_image_cmd = "rm " + original_image_path;
-    system_exec(delete_original_image_cmd); 
+void convert_to_compressed_image(const std::string &original_image_path, const std::string &compact_image_path) {
+    std::string options = "-c -o cluster_size=512K";
+
+    std::cout << "Creating compressed disk image at: " << compact_image_path << std::endl;
+
+    convert_disk_image(original_image_path, compact_image_path, options);
+    
+    std::cout << "Successfully converted and compressed disk image from " << original_image_path << " to " << compact_image_path << std::endl;
+}
+
+void delete_disk_image(const std::string &image_path) {
+    std::cout << "Deleting the original disk image: " << image_path << std::endl;
+    std::string delete_cmd = "rm " + image_path;
+    system_exec(delete_cmd);
+}
+
+void detach_disk(const std::string &vm_name, const std::string &disk_name) {
+    std::string detach_cmd = "virsh detach-disk " + vm_name + " " + disk_name + " --persistent";
+    system_exec(detach_cmd);
+}
+
+void attach_disk(const std::string &vm_name, const std::string &disk_path, const std::string &disk_name) {
+    std::string attach_cmd = "virsh attach-disk " + vm_name + " " + disk_path + " " + disk_name + " --driver qemu --subdriver qcow2 --persistent";
+    system_exec(attach_cmd);
+}
+
+std::string generate_unique_image_path() {
+    std::string unique_image_path;
+
+    while (true) {
+        unique_image_path = ship_lib_path + "images/disk-images/" + ship_env.name + generate_random_number(5) + ".qcow2"; 
+
+        if (!file_exists(unique_image_path)) {
+            break; 
+        }
+    }
+    return unique_image_path;
+}
+
+void replace_vm_disk(const std::string &vm_name, const std::string &new_disk_path, const std::string &disk_target) {
+    detach_disk(vm_name, disk_target);
+
+    attach_disk(vm_name, new_disk_path, disk_target);
+}
+
+void create_optimized_disk_image() {
+    std::string original_image_path = get_disk_image_path();
+    std::string compact_image_path = generate_unique_image_path();
+
+    convert_to_compact_image(original_image_path, compact_image_path);
+
+    if(ship_env.action == ShipAction::COMPRESS) {
+        convert_to_compressed_image(original_image_path, compact_image_path);
+    }
+
+    delete_disk_image(original_image_path);
 
     std::cout << "Making the vm use the compact disk image" << std::endl;  
     shutdown_vm();
 
-    std::string detach_original_disk_cmd = "virsh detach-disk " + ship_env.name + " vda --persistent";
-    system_exec(detach_original_disk_cmd); 
-
-    std::string attach_compact_disk_cmd = "virsh attach-disk " + ship_env.name + " " + compact_image_path + " vda --driver qemu --subdriver qcow2 --persistent";
-    system_exec(attach_compact_disk_cmd);
+    replace_vm_disk(ship_env.name, compact_image_path, "vda");
 
     std::cout << "Successfully replaced original disk image with compact version." << std::endl;
 }
@@ -1098,7 +1169,8 @@ void exec_action_for_vm() {
             send_vm_file();
             break;
         case ShipAction::OPTIMIZE:
-            create_compact_disk_image();
+        case ShipAction::COMPRESS:
+            create_optimized_disk_image();
             break;
         default: 
             std::cout << "Invalid action for VM.\n";

@@ -15,6 +15,7 @@
 #include <algorithm>
 #include <random>
 #include <iomanip>
+#include <regex>
 
 // System-specific includes
 #include <cstdlib>

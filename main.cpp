@@ -10,5 +10,3 @@ int main(int argc, char *argv[]) {
     exec_action();
     return 0;
 }
-
-

@@ -44,6 +44,7 @@ enum class ShipAction {
     SEND,
     SHUTDOWN,
     OPTIMIZE, 
+    COMPRESS, 
 };
 
 // allows for using the << operator with shipaction
@@ -126,6 +127,11 @@ void create_vm();
 void save_vm();
 void generate_vm_name();
 void start_vm_with_confirmation_prompt();
+void clear_split_files(const std::string& path);
+void combine_split_files(const std::string& path, const std::string& combined_iso_name);
+std::vector<std::string> get_links_from_page(const std::string& url);
+bool is_html_content(const std::string& url);
+void download_iso();
 void get_iso_source();
 void print_available_tested_vms();
 std::string get_tested_vm_link(const std::string &vm_name);
@@ -133,7 +139,16 @@ void tested_vm_information();
 void set_tested_vm(const std::string &vm_name);
 void get_tested_vm();
 void create_disk_image();
-void create_compact_disk_image();
+std::string get_disk_image_path();
+void convert_disk_image(const std::string &source_image, const std::string &dest_image, const std::string &options);
+void convert_to_compact_image(const std::string &original_image_path, const std::string &compact_image_path);
+void convert_to_compressed_image(const std::string &original_image_path, const std::string &compact_image_path);
+void delete_disk_image(const std::string &image_path);
+void detach_disk(const std::string &vm_name, const std::string &disk_name);
+void attach_disk(const std::string &vm_name, const std::string &disk_path, const std::string &disk_name);
+void replace_vm_disk(const std::string &vm_name, const std::string &new_disk_path, const std::string &disk_target);
+std::string generate_unique_image_path();
+void create_optimized_disk_image();
 void set_memory_limit();
 void set_cpu_limit();
 std::string generate_vm_xml();

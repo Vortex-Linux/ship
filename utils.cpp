@@ -25,6 +25,7 @@ void show_help() {
     std::cout << "    save NAME                     Take a snapshot of the specified virtual machine" << std::endl;
     std::cout << "    shutdown NAME                 Shut down the specified virtual machine" << std::endl;
     std::cout << "    optimize NAME                 Optimize the space used by the disk image of the specified virtual machine" << std::endl;
+    std::cout << "    compress NAME                 Compress and optimize the disk image of the specified virtual machine" << std::endl;
     std::cout << "    exec NAME                     Execute the given command in the console of the specified virtual machine" << std::endl;
     std::cout << "      --command COMMAND           Set the command to be executed" << std::endl;
     std::cout << "    package_download or download_packages NAME" << std::endl;
@@ -393,3 +394,52 @@ std::string decompress_lzip_file(const std::string& file_path) {
     
     return decompressed_file_path;
 }
+
+bool is_html_content(const std::string& url) {
+    std::string check_content_type = "curl -s -IL \"" + url + "\" | grep -i \"Content-Type\"";
+    std::string content_type = exec(check_content_type);
+
+    if (content_type.find("text/html") != std::string::npos || content_type.find("application/xhtml+xml") != std::string::npos) {
+        return true;  
+    }
+
+    return false;
+}
+
+std::vector<std::string> get_links_from_page(const std::string& url) {
+    std::string find_links_from_page = "lynx -dump -listonly -nonumbers '" + url + "' | grep -oP 'http[s]?://\\S+'";
+
+    std::string output = exec(find_links_from_page);
+
+    std::vector<std::string> links;
+    std::stringstream ss(output);
+    std::string link;
+
+    while (std::getline(ss, link)) {
+        links.push_back(link);
+    }
+
+    return links;
+}
+
+void clear_split_files(const std::string& path) {
+    std::string delete_split_files_cmd = "find " + path + " -type f -name '*.00?' -exec rm -f {} +";
+    std::cout << "Clearing existing split files..." << std::endl;
+    system(delete_split_files_cmd.c_str());
+}
+
+void combine_split_files(const std::string& path, const std::string& combined_name) {
+    std::string find_split_files_cmd = "find " + path + " -type f -name '*.00?'";
+    std::string output = exec(find_split_files_cmd);
+
+    if (!output.empty()) {
+        std::cout << "Combining split files into a single ISO..." << std::endl;
+        std::string combine_cmd = "cat " + path + "*.00? > " + path + combined_name;
+        system(combine_cmd.c_str());
+
+        ship_env.source_local = path + combined_name + " .qcow2";
+
+        std::cout << "Combined disk file created at " << path + combined_name << std::endl;
+    }
+}
+
