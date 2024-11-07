@@ -564,6 +564,13 @@ void start_vm_with_confirmation_prompt() {
     start_vm();
 }
 
+void download_iso() {
+    std::cout << "Downloading iso to images" << std::endl;
+        
+    std::string download_cmd = "aria2c --dir " + ship_lib_path + "images/iso-images " + ship_env.source;
+    system_exec(download_cmd);  
+}
+
 void get_iso_source() {
     std::string image_path = ship_lib_path + "images/iso-images/";
 
@@ -578,16 +585,14 @@ void get_iso_source() {
                 if (link.find_last_of(".") != std::string::npos) {
                     std::string extension = link.substr(link.find_last_of("."));
                     if (std::regex_match(extension, std::regex("\\.\\d{3}(/.*)?$"))) {
-                    
+                        ship_env.source = link;
+                        download_iso(); 
                     }
                 }
             }
             combine_split_files(image_path, ship_env.name);
         }else {
-            std::cout << "Downloading iso to images" << std::endl;
-        
-            std::string download_cmd = "aria2c --dir " + ship_lib_path + "images/iso-images " + ship_env.source;
-            system_exec(download_cmd);  
+            download_iso();
         }
         
         std::cout << "Finding the path to the downloaded iso image" << std::endl;

@@ -131,6 +131,7 @@ void clear_split_files(const std::string& path);
 void combine_split_files(const std::string& path, const std::string& combined_iso_name);
 std::vector<std::string> get_links_from_page(const std::string& url);
 bool is_html_content(const std::string& url);
+void download_iso();
 void get_iso_source();
 void print_available_tested_vms();
 std::string get_tested_vm_link(const std::string &vm_name);
