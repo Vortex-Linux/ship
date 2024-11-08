@@ -396,7 +396,7 @@ std::string decompress_lzip_file(const std::string& file_path) {
 }
 
 bool is_html_content(const std::string& url) {
-    std::string check_content_type = "curl -s -IL \"" + url + "\" | grep -i \"Content-Type\"";
+    std::string check_content_type = "curl -s -IL \"" + url + "\" | grep -i \"Content-Type\" | tail -n 1";
     std::string content_type = exec(check_content_type);
 
     if (content_type.find("text/html") != std::string::npos || content_type.find("application/xhtml+xml") != std::string::npos) {
