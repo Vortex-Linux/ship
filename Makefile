@@ -2,7 +2,7 @@
 CXX := g++
 
 # Compiler flags
-CXXFLAGS := -std=c++11 -Wall -Wextra -I /usr/include/boost
+CXXFLAGS := -std=c++11 -Wall -Wextra -I /usr/include/boost -I $(SRC_DIR) -I $(INCLUDE_DIR)
 
 # Linker flags
 LDFLAGS := -L /usr/lib -lboost_system -lboost_filesystem -lboost_program_options
@@ -34,6 +34,10 @@ DIRS := $(BASE_DIR) $(BASE_DIR)/images $(BASE_DIR)/images/iso-images $(BASE_DIR)
 # File paths
 FILES := $(BASE_DIR)/settings/general_settings.ini
 
+# Ensure obj and build directories exist
+$(OBJ_DIR) $(BUILD_DIR):
+	mkdir -p $@
+
 # Build target
 all: $(TARGET)
 
@@ -41,11 +45,11 @@ $(TARGET): $(OBJS)
 	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $@ $^
 
 # Rule for compiling .cpp files into .o object files
-$(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp
+$(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp $(OBJ_DIR)
 	$(CXX) $(CXXFLAGS) -MMD -MP -c $< -o $@
 
 # Rule for creating dependency files
-$(OBJ_DIR)/%.d: $(SRC_DIR)/%.cpp
+$(OBJ_DIR)/%.d: $(SRC_DIR)/%.cpp $(OBJ_DIR)
 	@$(CXX) -MM $(CXXFLAGS) $< > $@
 
 # Include dependency files
@@ -69,3 +73,4 @@ install: $(TARGET)
 			sudo chmod 666 $$file; \
 		fi \
 	done
+
