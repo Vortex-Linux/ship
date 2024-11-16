@@ -1,8 +1,6 @@
 #ifndef VM_OPERATIONS_H
 #define VM_OPERATIONS_H
 
-#include "ship_env.h" 
-
 void pass_password_to_tmux();
 void wait_for_vm_ready();
 void run_startup_commands();
@@ -50,7 +48,7 @@ void set_cpu_limit();
 void configure_vm();
 void system_command_vm(const std::string& command);
 bool exec_command_vm(const std::string& command);
-bool check_vm_command_exists(const std::string& command)
+bool check_vm_command_exists(const std::string& command);
 void find_vm_package_manager();
 void send_vm_file();
 void receive_vm_file();

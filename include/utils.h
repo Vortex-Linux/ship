@@ -1,8 +1,6 @@
 #ifndef UTILS_H
 #define UTILS_H
 
-#include "ship_env.h" 
-
 void show_help();
 std::string trim_trailing_whitespaces(const std::string& str);
 void system_exec(const std::string& cmd);

@@ -1,4 +1,4 @@
-#include "ship.h"
+#include "ship_env.h"
 
 //std::string ship_lib_path = "/var/lib/ship/";
 std::string ship_lib_path = "/home/ship/";

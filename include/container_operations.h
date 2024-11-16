@@ -1,8 +1,6 @@
 #ifndef CONTAINER_OPERATIONS_H
 #define CONTAINER_OPERATIONS_H
 
-#include "ship_env.h" 
-
 void stop_container();
 void delete_container();
 void create_container();

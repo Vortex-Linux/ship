@@ -1,4 +1,4 @@
-#include "vm_operations.h"
+#include "ship_env.h"
 
 void pass_password_to_tmux() {
     std::string capture_tmux_last_line_cmd = "tmux capture-pane -p -S -1 -t " + ship_env.name + " | tail -n 1";

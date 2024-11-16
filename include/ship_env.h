@@ -1,7 +1,12 @@
 #ifndef SHIP_ENV_H
 #define SHIP_ENV_H
 
-#include "headers.h" 
+#include "headers.h"
+#include "utils.h"
+#include "main.h"
+#include "ship.h"
+#include "container_operations.h"
+#include "vm_operations.h"
 
 extern boost::property_tree::ptree pt;
 
