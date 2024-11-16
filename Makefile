@@ -1,20 +1,20 @@
 # Compiler
 CXX := g++
 
+# Directory paths
+SRC_DIR := src
+INCLUDE_DIR := include
+OBJ_DIR := obj
+BUILD_DIR := build
+
 # Compiler flags
-CXXFLAGS := -std=c++11 -Wall -Wextra -I /usr/include/boost -I $(SRC_DIR) -I $(INCLUDE_DIR)
+CXXFLAGS := -std=c++11 -Wall -Wextra -I/usr/include/boost -I $(INCLUDE_DIR)
 
 # Linker flags
 LDFLAGS := -L /usr/lib -lboost_system -lboost_filesystem -lboost_program_options
 
 # Base directory path
 BASE_DIR := /home/ship
-
-# Directory paths
-SRC_DIR := src
-INCLUDE_DIR := include
-OBJ_DIR := obj
-BUILD_DIR := build
 
 # Automatically find source files in the src directory
 SRCS := $(wildcard $(SRC_DIR)/*.cpp)
@@ -29,35 +29,32 @@ DEPS := $(OBJS:.o=.d)
 TARGET := $(BUILD_DIR)/ship
 
 # Directory paths to ensure they exist
-DIRS := $(BASE_DIR) $(BASE_DIR)/images $(BASE_DIR)/images/iso-images $(BASE_DIR)/images/disk-images $(BASE_DIR)/settings $(BASE_DIR)/settings/ctr-settings $(BASE_DIR)/settings/vm-settings
+DIRS := $(BASE_DIR) $(BASE_DIR)/images $(BASE_DIR)/images/iso-images $(BASE_DIR)/images/disk-images \
+        $(BASE_DIR)/settings $(BASE_DIR)/settings/ctr-settings $(BASE_DIR)/settings/vm-settings
 
 # File paths
 FILES := $(BASE_DIR)/settings/general_settings.ini
 
-# Ensure obj and build directories exist
-$(OBJ_DIR) $(BUILD_DIR):
-	mkdir -p $@
+# Create necessary directories
+$(shell mkdir -p $(OBJ_DIR) $(BUILD_DIR))
 
 # Build target
 all: $(TARGET)
 
 $(TARGET): $(OBJS)
-	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $@ $^
+	$(CXX) $(OBJS) $(LDFLAGS) -o $@
 
 # Rule for compiling .cpp files into .o object files
-$(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp $(OBJ_DIR)
-	$(CXX) $(CXXFLAGS) -MMD -MP -c $< -o $@
+$(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp
+	@mkdir -p $(dir $@)
+	$(CXX) $(CXXFLAGS) -c $< -o $@ -MMD -MP
 
-# Rule for creating dependency files
-$(OBJ_DIR)/%.d: $(SRC_DIR)/%.cpp $(OBJ_DIR)
-	@$(CXX) -MM $(CXXFLAGS) $< > $@
-
-# Include dependency files
--include $(DEPS)
+# Include dependency files (only if they exist)
+-include $(wildcard $(DEPS))
 
 # Clean rule
 clean:
-	rm -f $(OBJS) $(DEPS) $(TARGET)
+	rm -rf $(OBJ_DIR) $(BUILD_DIR)
 
 # Install rule
 install: $(TARGET)
@@ -74,3 +71,4 @@ install: $(TARGET)
 		fi \
 	done
 
+.PHONY: all clean install
