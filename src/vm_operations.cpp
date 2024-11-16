@@ -361,6 +361,7 @@ void process_source_file() {
         }
     }
 }
+
 void create_vm() {
     
     bool custom_vm = true;
