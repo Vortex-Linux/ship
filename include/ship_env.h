@@ -1,5 +1,5 @@
-#ifndef SHIP_H
-#define SHIP_H
+#ifndef SHIP_ENV_H
+#define SHIP_ENV_H
 
 #include "headers.h" 
 
@@ -92,5 +92,5 @@ extern std::string ship_lib_path;
 
 extern ShipEnviornment ship_env;
 
-#endif // SHIP_H
+#endif
 
