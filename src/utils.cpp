@@ -1,4 +1,4 @@
-#include "ship.h"
+#include "ship_env.h"
 
 void show_help() {
     std::cout << "./ship [OPTIONS] COMMAND [ARGS...]" << std::endl << std::endl;
@@ -143,14 +143,14 @@ int get_next_available_number_in_command_output(const std::string& command,const
     return max_number + 1;
 }
 
-int get_next_available_vm_number(){
+int get_next_available_vm_number() {
     std::string command = "virsh list --all | grep vm";
     std::string prefix = "vm";
     int next_vm_number = get_next_available_number_in_command_output(command,prefix);
     return next_vm_number;
 }
 
-int get_next_available_container_number(){
+int get_next_available_container_number() {
     std::string command = "distrobox list | grep container";
     std::string prefix = "container_";
     int next_container_number = get_next_available_number_in_command_output(command,prefix);
@@ -396,7 +396,7 @@ std::string decompress_lzip_file(const std::string& file_path) {
 }
 
 bool is_html_content(const std::string& url) {
-    std::string check_content_type = "curl -s -IL \"" + url + "\" | grep -i \"Content-Type\"";
+    std::string check_content_type = "curl -s -IL \"" + url + "\" | grep -i \"Content-Type\" | tail -n 1";
     std::string content_type = exec(check_content_type);
 
     if (content_type.find("text/html") != std::string::npos || content_type.find("application/xhtml+xml") != std::string::npos) {

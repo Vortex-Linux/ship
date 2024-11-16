@@ -1,4 +1,4 @@
-#include "ship.h"
+#include "ship_env.h"
 
 void stop_container() {
     std::string cmd = "distrobox stop " + ship_env.name;

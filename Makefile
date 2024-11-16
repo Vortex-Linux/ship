@@ -1,54 +1,60 @@
 # Compiler
 CXX := g++
 
+# Directory paths
+SRC_DIR := src
+INCLUDE_DIR := include
+OBJ_DIR := obj
+BUILD_DIR := build
+
 # Compiler flags
-CXXFLAGS := -std=c++11 -Wall -Wextra -I /usr/include/boost
+CXXFLAGS := -std=c++11 -Wall -Wextra -I/usr/include/boost -I $(INCLUDE_DIR)
 
 # Linker flags
 LDFLAGS := -L /usr/lib -lboost_system -lboost_filesystem -lboost_program_options
 
-# Source files
-SRCS := main.cpp ship.cpp utils.cpp vm_operations.cpp container_operations.cpp 
-
-# Object files
-OBJS := $(SRCS:.cpp=.o)
-
-# Dependency files
-DEPS := $(SRCS:.cpp=.d)
-
-# Output executable
-TARGET := ship
-
 # Base directory path
-# BASE_DIR := /var/lib/ship
 BASE_DIR := /home/ship
 
-# Directory paths
-DIRS := $(BASE_DIR) $(BASE_DIR)/images $(BASE_DIR)/images/iso-images $(BASE_DIR)/images/disk-images $(BASE_DIR)/settings $(BASE_DIR)/settings/ctr-settings $(BASE_DIR)/settings/vm-settings
+# Automatically find source files in the src directory
+SRCS := $(wildcard $(SRC_DIR)/*.cpp)
+
+# Object files
+OBJS := $(SRCS:$(SRC_DIR)/%.cpp=$(OBJ_DIR)/%.o)
+
+# Dependency files
+DEPS := $(OBJS:.o=.d)
+
+# Output executable
+TARGET := $(BUILD_DIR)/ship
+
+# Directory paths to ensure they exist
+DIRS := $(BASE_DIR) $(BASE_DIR)/images $(BASE_DIR)/images/iso-images $(BASE_DIR)/images/disk-images \
+        $(BASE_DIR)/settings $(BASE_DIR)/settings/ctr-settings $(BASE_DIR)/settings/vm-settings
 
 # File paths
 FILES := $(BASE_DIR)/settings/general_settings.ini
+
+# Create necessary directories
+$(shell mkdir -p $(OBJ_DIR) $(BUILD_DIR))
 
 # Build target
 all: $(TARGET)
 
 $(TARGET): $(OBJS)
-	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $@ $^
+	$(CXX) $(OBJS) $(LDFLAGS) -o $@
 
 # Rule for compiling .cpp files into .o object files
-%.o: %.cpp
-	$(CXX) $(CXXFLAGS) -MMD -MP -c $< -o $@
+$(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp
+	@mkdir -p $(dir $@)
+	$(CXX) $(CXXFLAGS) -c $< -o $@ -MMD -MP
 
-# Rule for creating dependency files
-%.d: %.cpp
-	@$(CXX) -MM $(CXXFLAGS) $< > $@
-
-# Include dependency files
--include $(DEPS)
+# Include dependency files (only if they exist)
+-include $(wildcard $(DEPS))
 
 # Clean rule
 clean:
-	rm -f $(OBJS) $(DEPS) $(TARGET)
+	rm -rf $(OBJ_DIR) $(BUILD_DIR)
 
 # Install rule
 install: $(TARGET)
@@ -65,5 +71,4 @@ install: $(TARGET)
 		fi \
 	done
 
-
-
+.PHONY: all clean install

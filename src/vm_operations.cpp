@@ -1,4 +1,4 @@
-#include "ship.h"
+#include "ship_env.h"
 
 void pass_password_to_tmux() {
     std::string capture_tmux_last_line_cmd = "tmux capture-pane -p -S -1 -t " + ship_env.name + " | tail -n 1";
@@ -361,6 +361,7 @@ void process_source_file() {
         }
     }
 }
+
 void create_vm() {
     
     bool custom_vm = true;
@@ -567,7 +568,7 @@ void start_vm_with_confirmation_prompt() {
 
 void download_iso() {
     std::cout << "Downloading iso to images" << std::endl;
-        
+       
     std::string download_cmd = "aria2c --dir " + ship_lib_path + "images/iso-images " + ship_env.source;
     system_exec(download_cmd);  
 }
