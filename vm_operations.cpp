@@ -567,7 +567,7 @@ void start_vm_with_confirmation_prompt() {
 
 void download_iso() {
     std::cout << "Downloading iso to images" << std::endl;
-        
+       
     std::string download_cmd = "aria2c --dir " + ship_lib_path + "images/iso-images " + ship_env.source;
     system_exec(download_cmd);  
 }
