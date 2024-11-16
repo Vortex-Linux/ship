@@ -143,14 +143,14 @@ int get_next_available_number_in_command_output(const std::string& command,const
     return max_number + 1;
 }
 
-int get_next_available_vm_number(){
+int get_next_available_vm_number() {
     std::string command = "virsh list --all | grep vm";
     std::string prefix = "vm";
     int next_vm_number = get_next_available_number_in_command_output(command,prefix);
     return next_vm_number;
 }
 
-int get_next_available_container_number(){
+int get_next_available_container_number() {
     std::string command = "distrobox list | grep container";
     std::string prefix = "container_";
     int next_container_number = get_next_available_number_in_command_output(command,prefix);
