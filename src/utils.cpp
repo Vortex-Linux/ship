@@ -1,4 +1,4 @@
-#include "ship.h"
+#include "utils.h"
 
 void show_help() {
     std::cout << "./ship [OPTIONS] COMMAND [ARGS...]" << std::endl << std::endl;
