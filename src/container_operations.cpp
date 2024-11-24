@@ -361,7 +361,7 @@ void exec_action_for_container() {
             std::cout << "This feature is not available as of v0.1 alpha of VortexLinux" << std::endl;
             break;
         case ShipAction::SEND:
-            .//send_container_file();
+            //send_container_file();
             std::cout << "This feature is not available as of v0.1 alpha of VortexLinux" << std::endl;
             break;
         default:
