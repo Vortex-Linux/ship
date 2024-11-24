@@ -357,10 +357,12 @@ void exec_action_for_container() {
             exec_package_manager_operations();
             break;
         case ShipAction::RECEIVE:
-            receive_container_file();
+            //receive_container_file();
+            std::cout << "This feature is not available as of v0.1 alpha of VortexLinux" << std::endl;
             break;
         case ShipAction::SEND:
-            send_container_file();
+            .//send_container_file();
+            std::cout << "This feature is not available as of v0.1 alpha of VortexLinux" << std::endl;
             break;
         default:
             std::cout << "Invalid action for container\n";

@@ -2,6 +2,7 @@
 
 void show_help() {
     std::cout << "./ship [OPTIONS] COMMAND [ARGS...]" << std::endl << std::endl;
+    std::cout << "Warning : Both VM and Container sharing isnt available as of now v0.1 alpha of VortexLinux" << std::endl;
     std::cout << "Options:" << std::endl;
     std::cout << "  --help                          Show this help message and exit" << std::endl;
     std::cout << "  --virtual-machine or --vm        Specify action is for VM" << std::endl;

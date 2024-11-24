@@ -1170,10 +1170,12 @@ void exec_action_for_vm() {
             exec_package_manager_operations();
             break;
         case ShipAction::RECEIVE:
-            receive_vm_file();
+            //receive_vm_file();
+            std::cout << "This feature is not available as of v0.1 alpha of VortexLinux" << std::endl;
             break;
         case ShipAction::SEND:
-            send_vm_file();
+            //send_vm_file();
+            std::cout << "This feature is not available as of v0.1 alpha of VortexLinux" << std::endl;
             break;
         case ShipAction::OPTIMIZE:
         case ShipAction::COMPRESS:
