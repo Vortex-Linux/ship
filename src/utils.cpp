@@ -438,7 +438,7 @@ void combine_split_files(const std::string& path, const std::string& combined_na
         std::string combine_cmd = "cat " + path + "*.00? > " + path + combined_name;
         system(combine_cmd.c_str());
 
-        ship_env.source_local = path + combined_name + " .qcow2";
+        ship_env.source_local = path + combined_name;
 
         std::cout << "Combined disk file created at " << path + combined_name << std::endl;
     }

@@ -592,7 +592,7 @@ void get_iso_source() {
                     }
                 }
             }
-            combine_split_files(image_path, ship_env.name);
+            combine_split_files(image_path, ship_env.name + ".qcow2");
         }else {
             download_iso();
         }
