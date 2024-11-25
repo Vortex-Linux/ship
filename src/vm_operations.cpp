@@ -66,8 +66,8 @@ std::string find_network_address_vm() {
 }
 
 void attach_xpra(const std::string &username,const std::string &password) {
-    int max_retries = 5; 
-    int delay = 10;
+    int max_retries = 10; 
+    int delay = 15;
     int attempt = 1;
     
     std::cout << "Trying to connect to the xpra server. This might take a few moments if the server isn't running yet." << std::endl;
