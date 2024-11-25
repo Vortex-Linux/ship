@@ -66,8 +66,8 @@ std::string find_network_address_vm() {
 }
 
 void attach_xpra(const std::string &username,const std::string &password) {
-    int max_retries = 5; 
-    int delay = 10;
+    int max_retries = 10; 
+    int delay = 15;
     int attempt = 1;
     
     std::cout << "Trying to connect to the xpra server. This might take a few moments if the server isn't running yet." << std::endl;
@@ -592,7 +592,7 @@ void get_iso_source() {
                     }
                 }
             }
-            combine_split_files(image_path, ship_env.name);
+            combine_split_files(image_path, ship_env.name + ".qcow2");
         }else {
             download_iso();
         }
@@ -608,6 +608,7 @@ void get_iso_source() {
 
 void print_available_tested_vms() {
     std::cout << "The available tested and configured vms are: " << std::endl;
+    std::cout << "Warning : Only the Arch VM works as of now in v0.1 alpha" << std::endl;
     std::cout << "tails" << std::endl;
     std::cout << "whonix" << std::endl;
     std::cout << "debian" << std::endl;
@@ -738,6 +739,11 @@ void tested_vm_information() {
 }
 
 void set_tested_vm(const std::string &vm_name) {
+    if (vm_name != "arch") {
+        std::cout << "Currently as of v0.1 alpha only Arch is available as a tested vm" << std::endl;
+        exit(EXIT_FAILURE);
+    }
+
     if (vm_name == "tails") {
         ship_env.os = TestedVM::tails;
     } else if (vm_name == "whonix") {
@@ -1164,10 +1170,12 @@ void exec_action_for_vm() {
             exec_package_manager_operations();
             break;
         case ShipAction::RECEIVE:
-            receive_vm_file();
+            //receive_vm_file();
+            std::cout << "This feature is not available as of v0.1 alpha of VortexLinux" << std::endl;
             break;
         case ShipAction::SEND:
-            send_vm_file();
+            //send_vm_file();
+            std::cout << "This feature is not available as of v0.1 alpha of VortexLinux" << std::endl;
             break;
         case ShipAction::OPTIMIZE:
         case ShipAction::COMPRESS:

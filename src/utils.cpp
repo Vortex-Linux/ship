@@ -2,6 +2,7 @@
 
 void show_help() {
     std::cout << "./ship [OPTIONS] COMMAND [ARGS...]" << std::endl << std::endl;
+    std::cout << "Warning : Both VM and Container sharing isnt available as of now v0.1 alpha of VortexLinux" << std::endl;
     std::cout << "Options:" << std::endl;
     std::cout << "  --help                          Show this help message and exit" << std::endl;
     std::cout << "  --virtual-machine or --vm        Specify action is for VM" << std::endl;
@@ -396,7 +397,7 @@ std::string decompress_lzip_file(const std::string& file_path) {
 }
 
 bool is_html_content(const std::string& url) {
-    std::string check_content_type = "curl -s -IL \"" + url + "\" | grep -i \"Content-Type\" | tail -n 1";
+    std::string check_content_type = "curl -s -IL \"" + url + "\" | grep -i \"^Content-Type\" | tail -n 1";
     std::string content_type = exec(check_content_type);
 
     if (content_type.find("text/html") != std::string::npos || content_type.find("application/xhtml+xml") != std::string::npos) {
@@ -437,7 +438,7 @@ void combine_split_files(const std::string& path, const std::string& combined_na
         std::string combine_cmd = "cat " + path + "*.00? > " + path + combined_name;
         system(combine_cmd.c_str());
 
-        ship_env.source_local = path + combined_name + " .qcow2";
+        ship_env.source_local = path + combined_name;
 
         std::cout << "Combined disk file created at " << path + combined_name << std::endl;
     }
