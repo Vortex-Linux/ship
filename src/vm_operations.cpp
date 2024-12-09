@@ -163,6 +163,9 @@ void start_vm() {
         std::string start_xpra_server_cmd = "xpra start :100";
         exec_command_vm(start_xpra_server_cmd); 
 
+        std::string set_display_cmd = "export DISPLAY=:100";
+        exec_command_vm(set_display_cmd); 
+
         std::string username = pt.get<std::string>("credentials.username");
         std::string password = pt.get<std::string>("credentials.password");
         
@@ -774,6 +777,10 @@ void set_tested_vm(const std::string &vm_name) {
         ship_env.os = TestedVM::windows;
     } else {
         std::cout << "The specified vm is not available as a tested and configured vm" << std::endl;
+        if (!ship_env.image.empty()) {
+            std::cout << "Cancelling the VM creation process" << std::endl;
+            exit(EXIT_FAILURE);
+        }
         return;
     }
 
@@ -782,8 +789,12 @@ void set_tested_vm(const std::string &vm_name) {
 
 void get_tested_vm() {
     while (true) {
-        std::cout << "Please specify a vm from our tested and configured vms(use help to get the list of the available configured vms): ";
-        std::getline(std::cin, ship_env.source);
+        if (ship_env.image.empty()) {
+            std::cout << "Please specify a vm from our tested and configured vms(use help to get the list of the available configured vms): ";
+            std::getline(std::cin, ship_env.source);
+        } else {
+            ship_env.source = ship_env.image;
+        }
 
         if (ship_env.source == "help") {
             print_available_tested_vms();
